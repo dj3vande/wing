@@ -50,6 +50,7 @@ int expand_file(FILE *in, FILE *out)
 int main(int argc, char **argv)
 {
 	int opt;
+	int i;
 
 	while((opt = getopt(argc, argv, "t:")) != -1)
 	{
@@ -77,17 +78,31 @@ int main(int argc, char **argv)
 		}
 	}
 
-	/*TODO: Take files to expand on the command line*/
-	if(argc > optind)
+	if(argc == optind)
 	{
-		fprintf(stderr, "%s: NYI: I don't accept files on the command line yet\n", argv[0]);
-		exit(EXIT_FAILURE);
+		if(expand_file(stdin, stdout) == -1)
+		{
+			perror("(stdin)");
+			exit(EXIT_FAILURE);
+		}
+		return 0;
 	}
 
-	if(expand_file(stdin, stdout) == -1)
+	for(i=optind; i<argc; i++)
 	{
-		perror("(stdin)");
-		exit(EXIT_FAILURE);
+		FILE *in=fopen(argv[i], "r");
+		if(in == NULL)
+		{
+			perror(argv[i]);
+			exit(EXIT_FAILURE);
+		}
+		if(expand_file(in, stdout) == -1)
+		{
+			perror(argv[i]);
+			fclose(in);
+			exit(EXIT_FAILURE);
+		}
+		fclose(in);
 	}
 
 	return 0;
