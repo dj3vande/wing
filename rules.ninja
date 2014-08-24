@@ -1,0 +1,17 @@
+#Hosted GCC toolchain
+rule hostcc
+ depfile = ${out}.d
+ command = gcc ${cflags} -MMD -MF ${out}.d -o ${out} -c ${in}
+rule hostlink
+ command = gcc ${ldflags} -o ${out} ${in}
+rule hostar
+ command = ar rcs ${out} ${in}
+
+#mingw32 cross-compiler toolchain
+rule mingwcc
+ depfile = ${out}.d
+ command = mingw32-gcc ${cflags} -MMD -MF ${out}.d -o ${out} -c ${in}
+rule mingwlink
+ command = mingw32-gcc ${ldflags} -o ${out} ${in}
+rule mingwar
+ command = mingw32-ar rcs ${out} ${in}

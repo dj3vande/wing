@@ -1,0 +1,194 @@
+WING getopt documentation
+=========================
+
+getopt is a library routine used by tools to parse command-line options.
+
+For users (basic)
+-----------------
+The main user-facing benefit of getopt is that it provides a consistent
+interface for providing options to a program; any program that uses
+getopt will accept options in the same format.
+
+The format accepted by WING getopt is similar to the traditional format
+accepted by DOS and Windows programs, but has a few differences:
+  -All options are case-sensitive.
+  -All options are a single character.
+  -Options that do not take an argument can be combined:
+     '/abc' is equivalent to '/a /b /c'.
+  -Options that do not take an argument need not be separated on the
+     command line:   '/a/b/c' is equivalent to '/a /b /c'.
+     (This is the traditional DOS handling of this input format, but
+     limited to only the options that don't take an argument.)
+  -Options that take an argument can have the argument specified in
+     several equivalent ways: '/o:foo', '/o foo', and '/ofoo' are
+     all equivalent.
+  -There is an end-of-options marker; if "--" appears on the command
+     line, option processing will stop after that, even if other
+     arguments look like options.
+
+Some of these differences (most notably restricting options to a
+single character) are a result of restrictions built into the getopt
+interface and are unlikely to change (unless getopt is replaced);
+others are because the traditional behavior is difficult to specify
+and implement cleanly within the constraints imposed by getopt, and
+may be changed once the implementors have a chance to decide how
+to do it properly.
+(Our goal is to fit as comfortably as possible into a Windows user
+environment.)
+
+
+For *nix programmers (basic)
+----------------------------
+Use it just like the getopt you're used to.  Your users get option
+handling adapted to the environment they're used to for free.
+
+
+For Windows programmers (basic)
+-------------------------------
+[TODO: We should have a quickstart somewhere else, and just a
+reference to that here.]
+getopt uses a single function and a few external variables:
+    /*Get these by #including libwing/getopt.h*/
+    int getopt(int argc,char * const *argv,const char *optstring);
+    extern char *optarg;
+    extern int optind;
+    extern int opterr;
+    extern int optopt;
+
+The argc and argv arguments represent the command-line arguments
+to the program; the arguments to main (provided by the runtime
+environment) should usually be passed through without modification.
+(If you're using WinMain, you can call CommandLineToArgvW to unpack
+the command line into a suitable argv vector.  Since WING getopt
+is not unicode-aware, you'll also need to convert between unicode
+and ASCII; this may be fixed (or, at least, suitable wrappers written
+for you) in the future.)
+The optstring argument contains the list of valid options, each of
+them optionally followed by a ':'.  The options followed by ':'
+require an argument; the others do not.
+(The entire option list may also optionally be prefixed by ':',
+which affects the handling of invalid options.  See the in-depth
+documentation.)
+
+On each call, getopt will return either:
+       -1 if all the options have been processed
+  -or- '?' if an invalid option has been seen
+  -or- the character value of the option that's just been processed.
+
+If an invalid option has been seen (or an option that requires an
+argument is seen without one), optopt will have the character value
+of the option that caused the error.  (This can be either an option
+not in the list you gave getopt, or an option that requires an
+argument and didn't get one.)
+If opterr is not zero (it defaults to nonzero), getopt will also
+write an error message to stderr when it sees an invalid option.
+
+If the option that has been processed takes an argument, optarg
+points at the string containing that argument.
+
+When all options have been processed and getopt returns -1, optind
+will be the index of the first non-argument option.  The remaining
+(non-option) command line arguments are left untouched in
+argv[optind]..argv[argc-1].
+(If optind==argc, there are no non-option arguments.)
+
+
+
+For users (advanced)
+--------------------
+To do; see notes below.
+The primary noteworthy item is the environment variables that control
+the option format we accept.  For *nix geeks who are using Windows,
+you can set them to the non-Win32 default values, and then you can
+unambiguously use '-' as the option marker and '/' as the path
+separator (both '\' and '/' are accepted by the Windows filesystem
+interface, so unless the programmer is trying to break it, no magic
+is required to have tools do the right thing with '/').
+
+
+For programmers (advanced)
+--------------------------
+To do; see notes below.
+If you're new to getopt, reading the *nix getopt man page will also
+be useful.  Eventually, we'll have our own documentation that covers
+everything you'll find there.
+
+
+
+Original notes
+--------------
+TODO: Convert these into something a bit more useful than the
+programmer brain dump they started out as.
+
+We aim to be useful to people accustomed to Windows, without being
+  gratuitiously incompatible with the Single Unix Specification.
+If compiled with _WIN32 #defined, by default we accept the cartesian
+  product of the following forms:
+  -Introduced by either '-' or '/'
+  -Arguments are in any of the forms '/oarg', '/o arg', or '/o:arg'
+  -Options that do not take an argument may be followed by another option
+   without spaces but with a '/', so '/a/b/c' is equivalent to '/a /b /c'.
+  -End-of-options is optionally marked by '--'
+This is similar, but not identical, to the format of options traditionally
+  accepted by DOS commands.  The known differences are:
+  -We are case sensitive, traditional DOS is not.
+  -'/abc' is always a single option in DOS; if neither /a nor /b take
+   an argument, we treat it as equivalent to '/a /b /c'.
+  -DOS does not have an end-of-options marker.
+  -(Does DOS allow '/o arg', or require '/o:arg'?  '/oarg' is accepted
+   in at least some cases ('dir /ad' == 'dir /a:d'.)
+If compiled without _WIN32 defined, by default we only accept '-' to
+  introduce arguments, do not accept ':' as a separator between an option
+  and its argument, and do not accept option markers between different
+  options within a single command-line argument.
+  (The author believes this conforms to the SUSv3 definition of getopt.)
+These defaults can be overridden by the user by setting the environment
+  variables:
+  WING_OPTCHARS       List of characters that can introduce an option
+                      (default: "-/" on Win32, "-" otherwise)
+  WING_OPTSEPCHARS    List of characters that can separate an option from
+                      a following option in the same command line arg
+                      (default: "/" on Win32, "" otherwise)
+  WING_OPTARGSEP      List of characters that can separate an option
+                      from its argument (space = next command line arg)
+                      (default: ": " on Win32, " " otherwise)
+  WING_OPTEND         Literal string containing end-of-options marker
+                      (default: "--")
+The application can also override the defaults AND the environment by
+  pointing wing_optchars, wing_optsepchars, wing_optargsep, and
+  wing_optend at suitable strings.
+The precise use of the configuration is:
+  -If $WING_OPTEND is a nonempty string and, on a call to getopt,
+    strcmp(argv[optind],$WING_OPTEND) returns 0 (strings are equal),
+    optind is bumped (to point to the next, first non-option, argument)
+    and we return -1 (done).
+  -If argv[optind] starts with any character in $WING_OPTCHARS and is at
+    least two characters long, we parse this argument for options;
+    otherwise, we're done.
+  -If we have extracted an argument that does not take an option from
+    a command line argument, and the next character in that command-line
+    argument is in $WING_OPTSEPCHARS, that character is skipped over.
+    (This allows DOS-style '/a/b/c' options.)
+  -If an option requires an argument, we look for the argument by:
+    -First, if $WING_OPTARGSEP contains a space and the option character
+      is at the end of the command-line argument, and there is another
+      command-line argument (we're not at the end of argv), the next
+      command-line argument is returned as the option's argument without
+      further processing; optind becomes the index of the next
+      command-line arg after that one.
+    -Next, if the character after the option character is in
+      $WING_OPTARGSEP, that character is treated as a separator and the
+      string starting after the separator is returned as the option's
+      argument; optind becomes the index of the next command-line arg.
+    -Next, if the option character is not the last character in the
+      command-line arg, the remainder of the command-line arg is returned
+      as the option's argument; optind becomes the index of the next
+      command-line arg.
+    -If we haven't found an argument by the time we get here, we report
+      a "option needs argument but doesn't have one" error.
+    Note that we do not have a way of requiring that a separator be used.
+    Note also that options that take arguments MUST NOT have further options
+      specified in the same command line argument; so "/a/b" or "/a/b:foo" are
+      acceptable, (specifying option 'a' without an argument and 'b' with
+      or without one), but '/a:foo/b' does not recognize '/b' as an option
+      (it parses as option 'a' with argument 'foo/b').
