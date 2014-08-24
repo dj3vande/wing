@@ -1,13 +1,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-/*TODO: Parameterize*/
+#include <libwing/getopt.h>
+
 /*TODO: Support a list of tab stops instead of regular spacing*/
-#define TABSTOP	8
+static unsigned tabstop = 8;	/*8 = SUSv3 default*/
 
 static unsigned next_tab(unsigned c)
 {
-	return c + TABSTOP - c%TABSTOP;
+	return c + tabstop - c%tabstop;
 }
 
 /*Copies in to out, expanding tabs.
@@ -46,9 +47,43 @@ int expand_file(FILE *in, FILE *out)
 	return ferror(in) ? -1 : 0;
 }
 
-/*TODO: Accept command-line args*/
-int main(void)
+int main(int argc, char **argv)
 {
+	int opt;
+
+	while((opt = getopt(argc, argv, "t:")) != -1)
+	{
+		switch(opt)
+		{
+		case '?':
+			/*TODO: Output a usage message*/
+			exit(EXIT_FAILURE);
+		/*not reached*/
+		case 't':
+		{
+			char *endptr;
+			tabstop = strtoul(optarg, &endptr, 10);
+			if(tabstop == 0 || *endptr != '\0')
+			{
+				fprintf(stderr, "%s: Bad tabstop '%s'\n", argv[0], optarg);
+				exit(EXIT_FAILURE);
+			}
+		}
+		break;
+		default:
+			fprintf(stderr, "%s: Internal error: getopt returned unexpected value '%c'\n", argv[0], opt);
+			exit(EXIT_FAILURE);
+		/*not reached*/
+		}
+	}
+
+	/*TODO: Take files to expand on the command line*/
+	if(argc > optind)
+	{
+		fprintf(stderr, "%s: NYI: I don't accept files on the command line yet\n", argv[0]);
+		exit(EXIT_FAILURE);
+	}
+
 	if(expand_file(stdin, stdout) == -1)
 	{
 		perror("(stdin)");

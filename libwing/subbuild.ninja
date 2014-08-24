@@ -3,6 +3,3 @@ build ${dir}/host/getopt.o : hostcc ${dir}/getopt.c
 
 build ${dir}/mingw/libwing.a : mingwar ${dir}/mingw/getopt.o
 build ${dir}/mingw/getopt.o : mingwcc ${dir}/getopt.c
-
-host_libwing = ${dir}/host/libwing.a
-mingw_libwing = ${dir}/host/libwing.a
