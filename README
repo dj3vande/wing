@@ -1,0 +1,43 @@
+WING Is Not GNU.
+
+WING is an attempt to build tools that people familiar with unix will miss,
+in a way that will play nicely with a Windows environment.
+
+WING is distinct from every other project I have seen that implements unix
+tools for Windows in that making Windows look and feel like a unix shell
+is an explicit non-goal.  Avoiding gratuitious incompatibilities with SUSv3
+(and with historic unix practice, where SUSv3 underspecifies or fails to
+define functionality that I finds useful) is a goal, but incompatibilities
+or extensions that are required to play nicely in a Windows environment
+are not considered gratuitious.
+
+To the extent that it can be accomplished with a reasonable amount of
+effort, WING tools will be portable to various unixes as well.  This is
+primarily for convenience of development, and it is not expected that WING
+will offer anything that will convince users of any unix flavor to replace
+their existing tools.
+
+WING also serves as a sandbox for experimenting with multi-platform,
+multi-toolchain builds, which are not handled well by any build tools I
+know of.
+
+Known deficiencies in WING proper:
+-Very few tools actually exist, and the ones that do are closely tied to
+ the idiosyncratic desires and whims of the implementor.
+-Interaction with PowerShell-style pipelines (instead of text inputs and
+ outputs) has not been attempted, and may turn out to be well beyond the
+ scope of this effort.
+-Everything assumes ASCII, or at least single-byte, character sets (even
+ UTF8-encoded multibyte characters are handled wrong for things like
+ counting columns.)
+-SUSv3 getopt does not handle long options, which classical DOS and Windows
+ tools use, and it is not obvious that GNU getopt_long will cleanly handle
+ the Windows style.
+
+Known deficiencies in the WING build system:
+-All toolchain details are hard-coded, and need to be edited by hand (in
+ rules.ninja) for each new system.
+-Finding known toolchains on a new system is not automated.
+-All build rules assume the existence and names of two specific toolchains
+ (host and mingw).
+-Ninja build files are verbose and repetitive to write by hand.
