@@ -1,4 +1,4 @@
-cflags = -W -Wall -ansi -pedantic -O -I.
+cflags = -W -Wall -ansi -pedantic -O -I. -Werror
 
 include rules.ninja
 
@@ -7,3 +7,6 @@ subninja libwing/subbuild.ninja
 
 dir = ./expand
 subninja expand/subbuild.ninja
+
+dir = ./unexpand
+subninja unexpand/subbuild.ninja

@@ -1,0 +1,5 @@
+build ${dir}/host/unexpand : hostlink ${dir}/host/unexpand.o libwing/host/libwing.a
+build ${dir}/host/unexpand.o : hostcc ${dir}/unexpand.c
+
+build ${dir}/mingw/unexpand.exe : mingwlink ${dir}/mingw/unexpand.o libwing/mingw/libwing.a
+build ${dir}/mingw/unexpand.o : mingwcc ${dir}/unexpand.c
