@@ -5,7 +5,8 @@
 #include <libwing/getopt.h>
 
 /*TODO: Support a list of tab stops instead of regular spacing*/
-static unsigned tabstop = 8;	/*8 = SUSv3 default*/
+static unsigned tabstop = 8;	/*-t; 8 = SUSv3 default*/
+static int expand_all=0;	/*-a*/
 
 static unsigned next_tab(unsigned c)
 {
@@ -42,7 +43,7 @@ int unexpand_file(FILE *in, FILE *out)
 			seen_nonspace=0;
 			assert(spaces_seen == 0);
 		}
-		else if(seen_nonspace)	/*TODO: -a expands all tabs*/
+		else if(seen_nonspace && !expand_all)
 		{
 			putc(ch, out);
 		}
@@ -83,7 +84,7 @@ int main(int argc, char **argv)
 	int opt;
 	int i;
 
-	while((opt = getopt(argc, argv, "t:")) != -1)
+	while((opt = getopt(argc, argv, "t:a")) != -1)
 	{
 		switch(opt)
 		{
@@ -101,6 +102,9 @@ int main(int argc, char **argv)
 				exit(EXIT_FAILURE);
 			}
 		}
+		break;
+		case 'a':
+			expand_all=1;
 		break;
 		default:
 			fprintf(stderr, "%s: Internal error: getopt returned unexpected value '%c'\n", argv[0], opt);
