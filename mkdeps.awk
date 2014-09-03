@@ -15,10 +15,10 @@ $1 ~ /^#/ { next; }
 	module = $2;
 	platform = $4;
 	type = $5;
+	module_sourcetypes[module, type] = 1;
 	for (i=6; i<=NF; i++) {
-		key = module "," platform "," type;
-		old = sources[key];
-		sources[key] = old " " $i;
+		old = sources[module, platform, type];
+		sources[module, platform, type] = old " " $i;
 	}
 }
 
@@ -40,11 +40,12 @@ END {
 	for (module in modules) {
 		print "Module "module" ("modtypes[module]"):";
 		for (srctype in srctypes) {
-			print "\t"srctype" sources:"
-			for (platform in platforms) {
-				key = module "," platform "," srctype;
-				if (key in sources) {
-					print "\t\t["platform"]\t" sources[key];
+			if((module,srctype) in module_sourcetypes) {
+				print "\t"srctype" sources:"
+				for (platform in platforms) {
+					if ((module, platform, srctype) in sources) {
+						print "\t\t["platform"]\t" sources[module, platform, srctype];
+					}
 				}
 			}
 		}
