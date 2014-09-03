@@ -16,6 +16,7 @@ $1 ~ /^#/ { next; }
 	platform = $4;
 	type = $5;
 	module_sourcetypes[module, type] = 1;
+	module_platforms[module, platform] = 1;
 	for (i=6; i<=NF; i++) {
 		old = sources[module, platform, type];
 		sources[module, platform, type] = old " " $i;
@@ -47,6 +48,16 @@ END {
 						print "\t\t["platform"]\t" sources[module, platform, srctype];
 					}
 				}
+			}
+		}
+	}
+
+	print "";
+	for (platform in platforms) {
+		print "Modules for platform " platform ":";
+		for (module in modules) {
+			if ((module, platform) in module_platforms) {
+				print "\t" module;
 			}
 		}
 	}
