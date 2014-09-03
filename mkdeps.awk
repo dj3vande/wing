@@ -1,5 +1,8 @@
 #!awk -f
 
+#Munch comments
+$1 ~ /^#/ { next; }
+
 #Collect names of things
 {
 	modules[$2] = 1;
@@ -25,7 +28,7 @@
 		modtypes[$2] = $1;
 	}
 	if (modtypes[$2] != $1) {
-		print FILENAME ":" NR ": Module " $2 " was previously named with type " modtypes[$2];
+		print FILENAME ":" FNR ": Module " $2 " was previously named with type " modtypes[$2];
 		fail = 1;
 	}
 }
