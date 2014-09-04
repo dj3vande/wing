@@ -7,6 +7,24 @@ rule hostlink
 rule hostar
  command = ar rcs ${out} ${in}
 
+#Hosted 64-bit GCC toolchain
+rule host64cc
+ depfile = ${out}.d
+ command = gcc -m64 ${cflags} -MMD -MF ${out}.d -o ${out} -c ${in}
+rule host64link
+ command = gcc -m64 ${ldflags} -o ${out} ${in}
+rule host64ar
+ command = ar rcs ${out} ${in}
+
+#Hosted PowerPC GCC toolchain (Tiger can run these on x86)
+rule ppccc
+ depfile = ${out}.d
+ command = powerpc-apple-darwin8-gcc-4.0.1 ${cflags} -MMD -MF ${out}.d -o ${out} -c ${in}
+rule ppclink
+ command = powerpc-apple-darwin8-gcc-4.0.1 ${ldflags} -o ${out} ${in}
+rule ppcar
+ command = ar rcs ${out} ${in}
+
 #mingw32 cross-compiler toolchain
 rule mingwcc
  depfile = ${out}.d
@@ -15,3 +33,12 @@ rule mingwlink
  command = mingw32-gcc ${ldflags} -o ${out} ${in}
 rule mingwar
  command = mingw32-ar rcs ${out} ${in}
+
+#winegcc (link-with-winelib) toolchain
+rule winecc
+ depfile = ${out}.d
+ command = winegcc ${cflags} -MMD -MF ${out}.d -o ${out} -c ${in}
+rule winelink
+ command = winegcc ${ldflags} -o ${out} ${in}
+rule winear
+ command = ar rcs ${out} ${in}

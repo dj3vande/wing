@@ -1,11 +1,10 @@
-library libwing/libwing source all C libwing/getopt.c libwing/regex.c
-library libwing/libwing source win32 C libwing/errfmt.c
+library libwing/libwing source all C libwing/getopt.c
 #
 #Look!  A comment!
 #
 program expand/expand source all C expand/expand.c
 program expand/expand source all library libwing/libwing
-program unexpand/unexpand source all C expand/expand.c
+program unexpand/unexpand source all C unexpand/unexpand.c
 program unexpand/unexpand source all library libwing/libwing
-program page/wpage source win32 C page/page.c
-program page/wpage source win32 library libwing/libwing
+#program page/wpage source win32 C page/page.c
+#program page/wpage source win32 library libwing/libwing

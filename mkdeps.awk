@@ -34,10 +34,33 @@ $1 ~ /^#/ { next; }
 	}
 }
 
-END {
-	if (fail) {
-		exit 1;
+function write_rules(toolchain) {
+	for (module in modules) {
+		local_linkinputs = "";
+		n = split(sources[module, "all", "C"], local_srcs, " ");
+		for (i=1; i<=n; i++) {
+			# sub substitutes in-place
+			objname = local_srcs[i];
+			sub(/\.c$/, ".o", objname);
+			print "build " toolchain "/" objname " : " toolchain "cc " local_srcs[i];
+			local_linkinputs = local_linkinputs " " toolchain "/" objname;
+		}
+		n = split(sources[module, "all", "library"], local_srcs, " ");
+		for (i=1; i<=n; i++) {
+			local_linkinputs = local_linkinputs " " toolchain "/" local_srcs[i] ".a";
+		}
+			
+		if (modtypes[module] == "program") {
+			print "build " toolchain "/" module " : " toolchain "link" local_linkinputs;
+		} else if (modtypes[module] == "library") {
+			print "build " toolchain "/" module ".a : " toolchain "ar" local_linkinputs;
+		} else {
+			print "--ERROR-- Unknown module type '" modtypes[module] "'";
+		}
 	}
+}
+
+function human_readable_dump() {
 	for (module in modules) {
 		print "Module "module" ("modtypes[module]"):";
 		for (srctype in srctypes) {
@@ -61,4 +84,26 @@ END {
 			}
 		}
 	}
+}
+
+END {
+	if (fail) {
+		exit 1;
+	}
+
+	write_rules("host");
+
+	#mingw is not quite right in this version (needs exesuffix)
+	write_rules("mingw");
+
+	write_rules("host64");
+	write_rules("ppc");
+
+	##winegcc requires exesuffix as well as rule special-casing; its
+	##"executables" are pairs of %.exe and %.exe.so, where the .exe is
+	##a shell script that calls Wine to run the program in the .exe.so.
+	##So the rule we generate needs to be:
+	##build <module>.exe <module>.exe.so : winelink <inputs>
+	## out_base=<module>  ## winelink rule uses this (not ${out}) for -o
+	#write_rules("wine");
 }
