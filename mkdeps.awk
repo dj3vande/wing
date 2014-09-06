@@ -5,6 +5,10 @@ $1 ~ /^#/ { next; }
 
 #Global arrays:
 #  toolchains[toolchain_name] = platform for toolchain
+#  modules[module_name] = 1 (list of all known modules)
+#  sources[module, platform, type] = list of sources for module grouped
+#                                    by platform and type
+#  modtypes[module_name] = type
 
 #Toolchains
 # $2 = toolchain name
@@ -21,8 +25,6 @@ $1 == "toolchain" {
 #Collect names of things
 {
 	modules[$2] = 1;
-	srctypes[$5] = 1;
-	platforms[$4] = 1;
 }
 
 #Collect sources
@@ -30,8 +32,6 @@ $1 == "toolchain" {
 	module = $2;
 	platform = $4;
 	type = $5;
-	module_sourcetypes[module, type] = 1;
-	module_platforms[module, platform] = 1;
 	for (i=6; i<=NF; i++) {
 		old = sources[module, platform, type];
 		sources[module, platform, type] = old " " $i;
