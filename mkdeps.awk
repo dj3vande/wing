@@ -65,7 +65,7 @@ function write_rules(toolchain) {
 		for (i=1; i<=n; i++) {
 			local_linkinputs = local_linkinputs " " toolchain "/" local_srcs[i] ".a";
 		}
-			
+
 		if (modules[module] == "program") {
 			print "build " toolchain "/" module " : " toolchain "link" local_linkinputs;
 		} else if (modules[module] == "library") {
