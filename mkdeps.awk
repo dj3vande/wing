@@ -40,10 +40,15 @@ $1 == "toolchain" {
 	}
 }
 
+function get_sources(module, platform, type) {
+	return sources[module, "all", type] " " sources[module, platform, type];
+}
+
 function write_rules(toolchain) {
+	platform = toolchains[toolchain];
 	for (module in modules) {
 		local_linkinputs = "";
-		n = split(sources[module, "all", "C"], local_srcs, " ");
+		n = split(get_sources(module, platform, "C"), local_srcs, " ");
 		for (i=1; i<=n; i++) {
 			# sub substitutes in-place
 			objname = local_srcs[i];
@@ -51,7 +56,7 @@ function write_rules(toolchain) {
 			print "build " toolchain "/" objname " : " toolchain "cc " local_srcs[i];
 			local_linkinputs = local_linkinputs " " toolchain "/" objname;
 		}
-		n = split(sources[module, "all", "library"], local_srcs, " ");
+		n = split(get_sources(module, platform, "library"), local_srcs, " ");
 		for (i=1; i<=n; i++) {
 			local_linkinputs = local_linkinputs " " toolchain "/" local_srcs[i] ".a";
 		}
