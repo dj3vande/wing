@@ -5,10 +5,9 @@ $1 ~ /^#/ { next; }
 
 #Global arrays:
 #  toolchains[toolchain_name] = platform for toolchain
-#  modules[module_name] = 1 (list of all known modules)
+#  modules[module_name] = type (also serves as list of all known modules)
 #  sources[module, platform, type] = list of sources for module grouped
 #                                    by platform and type
-#  modtypes[module_name] = type
 
 #Toolchains
 # $2 = toolchain name
@@ -20,11 +19,6 @@ $1 == "toolchain" {
 	# TODO: Be more selective in next rule (collect names) so we don't
 	# have to do this here
 	next;
-}
-
-#Collect names of things
-{
-	modules[$2] = 1;
 }
 
 #Collect sources
@@ -40,11 +34,11 @@ $1 == "toolchain" {
 
 #Collect module types and sanity-check
 {
-	if (!($2 in modtypes)) {
-		modtypes[$2] = $1;
+	if (!($2 in modules)) {
+		modules[$2] = $1;
 	}
-	if (modtypes[$2] != $1) {
-		print FILENAME ":" FNR ": Module " $2 " was previously named with type " modtypes[$2];
+	if (modules[$2] != $1) {
+		print FILENAME ":" FNR ": Module " $2 " was previously named with type " modules[$2];
 		fail = 1;
 	}
 }
@@ -65,12 +59,12 @@ function write_rules(toolchain) {
 			local_linkinputs = local_linkinputs " " toolchain "/" local_srcs[i] ".a";
 		}
 			
-		if (modtypes[module] == "program") {
+		if (modules[module] == "program") {
 			print "build " toolchain "/" module " : " toolchain "link" local_linkinputs;
-		} else if (modtypes[module] == "library") {
+		} else if (modules[module] == "library") {
 			print "build " toolchain "/" module ".a : " toolchain "ar" local_linkinputs;
 		} else {
-			print "--ERROR-- Unknown module type '" modtypes[module] "'";
+			print "--ERROR-- Unknown module type '" modules[module] "'";
 		}
 	}
 }
