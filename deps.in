@@ -6,8 +6,10 @@ library libwing/libwing source all C libwing/getopt.c
 #
 #Look!  A comment!
 #
-program expand/expand source all C expand/expand.c
-program expand/expand source all library libwing/libwing
+program expand/expand source unix C expand/expand.c
+program expand/expand source unix library libwing/libwing
+program expand/wexpand source win32 C expand/expand.c
+program expand/wexpand source win32 library libwing/libwing
 program unexpand/unexpand source all C unexpand/unexpand.c
 program unexpand/unexpand source all library libwing/libwing
 #program page/wpage source win32 C page/page.c
