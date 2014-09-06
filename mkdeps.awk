@@ -8,6 +8,7 @@ $1 ~ /^#/ { next; }
 #  modules[module_name] = type (also serves as list of all known modules)
 #  sources[module, platform, type] = list of sources for module grouped
 #                                    by platform and type
+#  mod_platforms[module_name, platform] = 1 (list of module/platforms)
 
 #Toolchains
 # $2 = toolchain name
@@ -23,6 +24,7 @@ $1 == "toolchain" {
 	module = $2;
 	platform = $4;
 	type = $5;
+	mod_platforms[module, platform] = 1;
 	for (i=6; i<=NF; i++) {
 		old = sources[module, platform, type];
 		sources[module, platform, type] = old " " $i;
@@ -47,6 +49,9 @@ function get_sources(module, platform, type) {
 function write_rules(toolchain) {
 	platform = toolchains[toolchain];
 	for (module in modules) {
+		if (!((module, "all") in mod_platforms || (module, platform) in mod_platforms)) {
+			continue;
+		}
 		local_linkinputs = "";
 		n = split(get_sources(module, platform, "C"), local_srcs, " ");
 		for (i=1; i<=n; i++) {
