@@ -52,18 +52,29 @@ function write_rules(toolchain) {
 		if (!((module, "all") in mod_platforms || (module, platform) in mod_platforms)) {
 			continue;
 		}
+
+		#Clear out inputs-by-type array, without breaking if it
+		# doesn't yet exist as an array
+		local_inputsbytype[""]="";
+		for(type in local_inputsbytype) {
+			delete local_inputsbytype[type];
+		}
+
 		local_linkinputs = "";
 		n = split(get_sources(module, platform, "C"), local_srcs, " ");
 		for (i=1; i<=n; i++) {
 			# sub substitutes in-place
-			objname = local_srcs[i];
+			objname = toolchain "/" local_srcs[i];
 			sub(/\.c$/, ".o", objname);
-			print "build " toolchain "/" objname " : " toolchain "cc " local_srcs[i];
-			local_linkinputs = local_linkinputs " " toolchain "/" objname;
+			print "build " objname " : " toolchain "cc " local_srcs[i];
+			local_inputsbytype["obj"] = local_inputsbytype["obj"] " " objname;
+			local_linkinputs = local_linkinputs " " objname;
 		}
 		n = split(get_sources(module, platform, "library"), local_srcs, " ");
 		for (i=1; i<=n; i++) {
-			local_linkinputs = local_linkinputs " " toolchain "/" local_srcs[i] ".a";
+			libname = toolchain "/" local_srcs[i] ".a";
+			local_linkinputs = local_linkinputs " " libname;
+			local_inputsbytype["lib"] = local_inputsbytype["lib"] " " libname;
 		}
 
 		if (modules[module] == "program") {
@@ -72,6 +83,9 @@ function write_rules(toolchain) {
 			print "build " toolchain "/" module ".a : " toolchain "ar" local_linkinputs;
 		} else {
 			print "--ERROR-- Unknown module type '" modules[module] "'";
+		}
+		for (type in local_inputsbytype) {
+			print " in_" type " =" local_inputsbytype[type];
 		}
 	}
 }
