@@ -3,6 +3,21 @@
 #Munch comments
 $1 ~ /^#/ { next; }
 
+#Global arrays:
+#  toolchains[toolchain_name] = platform for toolchain
+
+#Toolchains
+# $2 = toolchain name
+# $3 = platform
+# $4 = subplatform
+# $5 = bitness
+$1 == "toolchain" {
+	toolchains[$2] = $3;
+	# TODO: Be more selective in next rule (collect names) so we don't
+	# have to do this here
+	next;
+}
+
 #Collect names of things
 {
 	modules[$2] = 1;
@@ -91,19 +106,17 @@ END {
 		exit 1;
 	}
 
-	write_rules("host");
-
-	#mingw is not quite right in this version (needs exesuffix)
-	write_rules("mingw");
-
-	write_rules("host64");
-	write_rules("ppc");
-
-	##winegcc requires exesuffix as well as rule special-casing; its
-	##"executables" are pairs of %.exe and %.exe.so, where the .exe is
-	##a shell script that calls Wine to run the program in the .exe.so.
-	##So the rule we generate needs to be:
-	##build <module>.exe <module>.exe.so : winelink <inputs>
-	## out_base=<module>  ## winelink rule uses this (not ${out}) for -o
-	#write_rules("wine");
+	#Toolchain notes:
+	#mingw (and Win32 toolchains in general) need to know to put
+	# a '.exe' suffix on programs.
+	#winegcc requires more general pattern-matching, since when given
+	# '-o foo' to create an executable it actually creates two files,
+	# foo.exe and foo.exe.so (so the build line writer needs to write
+	# both output files, and give a 'base_name = foo' for the rule to
+	# use.
+	#Toolchain-specific name generation for things like object files
+	# and libraries is also required before we're ready for prime time.
+	for (tc in toolchains) {
+		write_rules(tc);
+	}
 }

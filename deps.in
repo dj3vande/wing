@@ -1,3 +1,7 @@
+toolchain host unix osx 32
+toolchain host64 unix osx 64
+toolchain mingw win32 windows 32
+toolchain ppc unix osx-ppc 32
 library libwing/libwing source all C libwing/getopt.c
 #
 #Look!  A comment!
