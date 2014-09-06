@@ -75,32 +75,6 @@ function write_rules(toolchain) {
 	}
 }
 
-function human_readable_dump() {
-	for (module in modules) {
-		print "Module "module" ("modtypes[module]"):";
-		for (srctype in srctypes) {
-			if((module,srctype) in module_sourcetypes) {
-				print "\t"srctype" sources:"
-				for (platform in platforms) {
-					if ((module, platform, srctype) in sources) {
-						print "\t\t["platform"]\t" sources[module, platform, srctype];
-					}
-				}
-			}
-		}
-	}
-
-	print "";
-	for (platform in platforms) {
-		print "Modules for platform " platform ":";
-		for (module in modules) {
-			if ((module, platform) in module_platforms) {
-				print "\t" module;
-			}
-		}
-	}
-}
-
 END {
 	if (fail) {
 		exit 1;
