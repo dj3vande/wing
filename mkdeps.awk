@@ -16,9 +16,6 @@ $1 ~ /^#/ { next; }
 # $5 = bitness
 $1 == "toolchain" {
 	toolchains[$2] = $3;
-	# TODO: Be more selective in next rule (collect names) so we don't
-	# have to do this here
-	next;
 }
 
 #Collect sources
@@ -33,7 +30,7 @@ $1 == "toolchain" {
 }
 
 #Collect module types and sanity-check
-{
+($1 == "program") || ($1 == "library") {
 	if (!($2 in modules)) {
 		modules[$2] = $1;
 	}
