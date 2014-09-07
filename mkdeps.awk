@@ -9,6 +9,44 @@ $1 ~ /^#/ { next; }
 #  sources[module, platform, type] = list of sources for module grouped
 #                                    by platform and type
 #  mod_platforms[module_name, platform] = 1 (list of module/platforms)
+#  templates[toolchain, type] = templates for output filenames
+#  suffixes[type] = almost-ERE matching extension for input filenames
+#                   (the ERE is formed by gsub("\\.","\\.",suffix) and then
+#                   using "("suffix")$".)
+
+# TODO: Make this configurable
+BEGIN {
+	templates["all", "obj"] = "%.o";
+	templates["all", "library"] = "%.a";
+	templates["all", "program"] = "%";
+	templates["mingw", "program"] = "%.exe";
+	templates["wine", "program"] = "%.exe %.exe.so";
+
+	suffixes["C"] = ".c";
+}
+
+function get_base_name(type, name) {
+	if(type in suffixes) {
+		suffix = suffixes[type];
+		gsub("\\.", "\\.", suffix);
+		gsub("("suffix")$", "", name);
+	}
+	return name;
+}
+
+function get_out_name(toolchain, type, base) {
+	if((toolchain, type) in templates) {
+		retval = templates[toolchain, type];
+		gsub("%", base, retval);
+		return retval;
+	}
+	if(("all", type) in templates) {
+		retval = templates["all", type];
+		gsub("%", base, retval);
+		return retval;
+	}
+	return base;
+}
 
 #Toolchains
 # $2 = toolchain name
@@ -64,23 +102,25 @@ function write_rules(toolchain) {
 		n = split(get_sources(module, platform, "C"), local_srcs, " ");
 		for (i=1; i<=n; i++) {
 			# sub substitutes in-place
-			objname = toolchain "/" local_srcs[i];
-			sub(/\.c$/, ".o", objname);
+			basename = get_base_name("C", local_srcs[i]);
+			objname = toolchain "/" get_out_name(toolchain, "obj", basename);
 			print "build " objname " : " toolchain "cc " local_srcs[i];
 			local_inputsbytype["obj"] = local_inputsbytype["obj"] " " objname;
 			local_linkinputs = local_linkinputs " " objname;
 		}
 		n = split(get_sources(module, platform, "library"), local_srcs, " ");
 		for (i=1; i<=n; i++) {
-			libname = toolchain "/" local_srcs[i] ".a";
+			libname = toolchain "/" get_out_name(toolchain, "library", local_srcs[i]);
 			local_linkinputs = local_linkinputs " " libname;
-			local_inputsbytype["lib"] = local_inputsbytype["lib"] " " libname;
+			local_inputsbytype["library"] = local_inputsbytype["library"] " " libname;
 		}
 
 		if (modules[module] == "program") {
-			print "build " toolchain "/" module " : " toolchain "link" local_linkinputs;
+			outname = get_out_name(toolchain, "program", module);
+			print "build " toolchain "/" outname " : " toolchain "link" local_linkinputs;
 		} else if (modules[module] == "library") {
-			print "build " toolchain "/" module ".a : " toolchain "ar" local_linkinputs;
+			outname = get_out_name(toolchain, "library", module);
+			print "build " toolchain "/" outname " : " toolchain "ar" local_linkinputs;
 		} else {
 			print "--ERROR-- Unknown module type '" modules[module] "'";
 		}
