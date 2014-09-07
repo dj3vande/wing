@@ -39,6 +39,6 @@ rule winecc
  depfile = ${out}.d
  command = winegcc ${cflags} -MMD -MF ${out}.d -o ${out} -c ${in}
 rule winelink
- command = winegcc ${ldflags} -o ${out} ${in}
+ command = winegcc ${ldflags} -o ${out_base} ${in}
 rule winear
  command = ar rcs ${out} ${in}

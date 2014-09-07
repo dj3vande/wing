@@ -103,27 +103,28 @@ function write_rules(toolchain) {
 		for (i=1; i<=n; i++) {
 			# sub substitutes in-place
 			basename = get_base_name("C", local_srcs[i]);
-			objname = toolchain "/" get_out_name(toolchain, "obj", basename);
+			objname = get_out_name(toolchain, "obj", toolchain "/" basename);
 			print "build " objname " : " toolchain "cc " local_srcs[i];
 			local_inputsbytype["obj"] = local_inputsbytype["obj"] " " objname;
 			local_linkinputs = local_linkinputs " " objname;
 		}
 		n = split(get_sources(module, platform, "library"), local_srcs, " ");
 		for (i=1; i<=n; i++) {
-			libname = toolchain "/" get_out_name(toolchain, "library", local_srcs[i]);
+			libname = get_out_name(toolchain, "library", toolchain "/" local_srcs[i]);
 			local_linkinputs = local_linkinputs " " libname;
 			local_inputsbytype["library"] = local_inputsbytype["library"] " " libname;
 		}
 
 		if (modules[module] == "program") {
-			outname = get_out_name(toolchain, "program", module);
-			print "build " toolchain "/" outname " : " toolchain "link" local_linkinputs;
+			outname = get_out_name(toolchain, "program", toolchain "/" module);
+			print "build " outname " : " toolchain "link" local_linkinputs;
 		} else if (modules[module] == "library") {
-			outname = get_out_name(toolchain, "library", module);
-			print "build " toolchain "/" outname " : " toolchain "ar" local_linkinputs;
+			outname = get_out_name(toolchain, "library", toolchain "/" module);
+			print "build " outname " : " toolchain "ar" local_linkinputs;
 		} else {
 			print "--ERROR-- Unknown module type '" modules[module] "'";
 		}
+		print " out_base = " toolchain "/" module;
 		for (type in local_inputsbytype) {
 			print " in_" type " =" local_inputsbytype[type];
 		}
