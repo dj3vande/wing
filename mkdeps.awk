@@ -13,6 +13,14 @@ $1 ~ /^#/ { next; }
 #  suffixes[type] = almost-ERE matching extension for input filenames
 #                   (the ERE is formed by gsub("\\.","\\.",suffix) and then
 #                   using "("suffix")$".)
+#  rules[mod_type] = Base name of build rule ("link" or "ar" are currently
+#                    known) to build modules of that type
+
+# TODO: Make configurable
+BEGIN {
+	rules["program"] = "link";
+	rules["library"] = "ar";
+}
 
 $1 == "suffix" {
 	if($2 in suffixes) {
@@ -131,15 +139,9 @@ function write_rules(toolchain) {
 			local_inputsbytype["library"] = local_inputsbytype["library"] " " libname;
 		}
 
-		if (modules[module] == "program") {
-			outname = get_out_name(toolchain, "program", toolchain "/" module);
-			print "build " outname " : " toolchain "link" local_linkinputs;
-		} else if (modules[module] == "library") {
-			outname = get_out_name(toolchain, "library", toolchain "/" module);
-			print "build " outname " : " toolchain "ar" local_linkinputs;
-		} else {
-			print "--ERROR-- Unknown module type '" modules[module] "'";
-		}
+		outname = get_out_name(toolchain, modules[module], toolchain "/" module);
+		rule = toolchain rules[modules[module]];
+		print "build " outname " : " rule local_linkinputs;
 		print " out_base = " toolchain "/" module;
 		for (type in local_inputsbytype) {
 			print " in_" type " =" local_inputsbytype[type];
