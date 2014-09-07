@@ -16,9 +16,8 @@ $1 ~ /^#/ { next; }
 
 # TODO: Make this configurable
 BEGIN {
-	templates["all", "obj"] = "%.o";
-	templates["all", "library"] = "%.a";
-	templates["all", "program"] = "%";
+	suffixes["obj"] = ".o";
+	suffixes["library"] = ".a";
 	templates["mingw", "program"] = "%.exe";
 	templates["wine", "program"] = "%.exe %.exe.so";
 
@@ -44,6 +43,13 @@ function get_out_name(toolchain, type, base) {
 		retval = templates["all", type];
 		gsub("%", base, retval);
 		return retval;
+	}
+	if(type in suffixes) {
+		#If there are multiple suffixes allowed, assume the first
+		#  one is preferred
+		suffix = suffixes[type];
+		sub("\\|.*", "", suffix);
+		return base suffix;
 	}
 	return base;
 }
