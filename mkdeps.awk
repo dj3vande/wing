@@ -16,7 +16,7 @@ $1 ~ /^#/ { next; }
 
 $1 == "suffix" {
 	if($2 in suffixes) {
-		print FILENAME ":" FNR ": Warning: Replacing previously defined suffixes for filetype '" $2 "'";
+		print FILENAME ":" FNR ": Warning: Replacing previously defined suffixes for filetype '" $2 "'" >> "/dev/stderr";
 	}
 	suffixes[$2] = $3;
 	for(i=4; i<=NF; i++) {
@@ -26,7 +26,7 @@ $1 == "suffix" {
 
 $1 == "template" {
 	if(($2,$3) in templates) {
-		print FILENAME ":" FNR ": Warning: Replacing previously defined template for toolchain '" $2 "', filetype '" $3 "'";
+		print FILENAME ":" FNR ": Warning: Replacing previously defined template for toolchain '" $2 "', filetype '" $3 "'" >> "/dev/stderr";
 	}
 	templates[$2,$3] = $4;
 	for(i=5; i<=NF; i++) {
@@ -91,7 +91,7 @@ $1 == "toolchain" {
 		modules[$2] = $1;
 	}
 	if (modules[$2] != $1) {
-		print FILENAME ":" FNR ": Module " $2 " was previously named with type " modules[$2];
+		print FILENAME ":" FNR ": Module " $2 " was previously named with type " modules[$2] >> "/dev/stderr";
 		fail = 1;
 	}
 }
