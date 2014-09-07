@@ -1,3 +1,10 @@
+#Name generation rules
+suffix obj .o
+suffix library .a
+suffix C .c
+template mingw program %.exe
+template wine program %.exe %.exe.so
+
 #toolchains
 toolchain host unix osx 32
 toolchain host64 unix osx 64

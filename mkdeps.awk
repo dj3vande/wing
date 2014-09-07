@@ -14,14 +14,24 @@ $1 ~ /^#/ { next; }
 #                   (the ERE is formed by gsub("\\.","\\.",suffix) and then
 #                   using "("suffix")$".)
 
-# TODO: Make this configurable
-BEGIN {
-	suffixes["obj"] = ".o";
-	suffixes["library"] = ".a";
-	templates["mingw", "program"] = "%.exe";
-	templates["wine", "program"] = "%.exe %.exe.so";
+$1 == "suffix" {
+	if($2 in suffixes) {
+		print FILENAME ":" FNR ": Warning: Replacing previously defined suffixes for filetype '" $2 "'";
+	}
+	suffixes[$2] = $3;
+	for(i=4; i<=NF; i++) {
+		suffixes[$2] = suffixes[$2] "|" $i;
+	}
+}
 
-	suffixes["C"] = ".c";
+$1 == "template" {
+	if(($2,$3) in templates) {
+		print FILENAME ":" FNR ": Warning: Replacing previously defined template for toolchain '" $2 "', filetype '" $3 "'";
+	}
+	templates[$2,$3] = $4;
+	for(i=5; i<=NF; i++) {
+		templates[$2,$3] = templates[$2,$3] " " $i;
+	}
 }
 
 function get_base_name(type, name) {
