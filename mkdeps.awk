@@ -86,6 +86,10 @@ $1 == "toolchain" {
 	module = $2;
 	platform = $4;
 	type = $5;
+	if(!($1 in rules)) {
+		print FILENAME ":" FNR ": Module " $2 " has unknown type '"$1"'" >> "/dev/stderr";
+		fail=1;
+	}
 	mod_platforms[module, platform] = 1;
 	for (i=6; i<=NF; i++) {
 		old = sources[module, platform, type];
