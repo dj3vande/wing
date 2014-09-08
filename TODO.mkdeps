@@ -1,0 +1,47 @@
+Things mkdeps doesn't support but should:
+
+-Including description files from subdirectories (local view instead
+ of requiring everything to be defined in a single place)
+ Note that this will also make it easy to move build directories closer
+ to the sources they're building from, since internal state will have
+ path-prefix and actual filename without needing to do the splitting itself.
+
+-Generating phony rules like "default_${dir}" to build things in a particular
+ place (and what they depend on)
+
+-Generating phony rules for a particular toolchain, and ideally rapid
+ shuffling of defaults (for things like debug/release build - default
+ should be what dev is currently working with, default default should be
+ whatever builds fastest, and targets like "all", "debug", "release" should
+ behave sensibly)
+
+-Generating build.ninja files (or "updir.ninja" and let build.ninja wrap
+ those if desired?) in subdirectories that invoke a build from the parent
+ directory
+
+-Configurable source-based rule definitions
+ i.e. we want to be able to say things like
+	rule cc C -> obj
+	rule link [obj] [library] -> program
+	rule ar [obj] -> library
+	rule yacc yacc -> C
+ instead of having the rules and corresponding filetype transformations
+ built in
+
+-In-tree code generators (may need special magic to know which toolchain
+ to use to build things we run as part of the build; alternatively, if
+ requiring the user to encode that in rules.ninja is sensible, we still
+ need to know that this build step requires that target to be built first)
+
+-Cartesian products (for these back-ends, and these front-ends, build every
+ backend+frontend pair)
+
+-Automagic discovery of toolchains and generation of rules.ninja (probably
+ in an auxiliary helper script and not mkdeps proper)
+
+-Spaces in filenames (need to handle quoting on input to keep awk from
+ splitting as multiple fields, and on output for ninja)
+
+-Finer-grained control over where build outputs go
+
+-A fancy name (shuriken?)
