@@ -114,6 +114,9 @@ function get_sources(module, platform, type) {
 
 function write_rules(toolchain) {
 	platform = toolchains[toolchain];
+
+	local_programs = "";
+
 	for (module in modules) {
 		if (!((module, "all") in mod_platforms || (module, platform) in mod_platforms)) {
 			continue;
@@ -150,6 +153,13 @@ function write_rules(toolchain) {
 		for (type in local_inputsbytype) {
 			print " in_" type " =" local_inputsbytype[type];
 		}
+
+		if (modules[module] == "program") {
+			local_programs = local_programs " " outname;
+		}
+	}
+	if (local_programs != "") {
+		print "build " toolchain " : phony" local_programs;
 	}
 }
 
