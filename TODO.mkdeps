@@ -9,12 +9,6 @@ Things mkdeps doesn't support but should:
 -Generating phony rules like "default_${dir}" to build things in a particular
  place (and what they depend on)
 
--Generating phony rules for a particular toolchain, and ideally rapid
- shuffling of defaults (for things like debug/release build - default
- should be what dev is currently working with, default default should be
- whatever builds fastest, and targets like "all", "debug", "release" should
- behave sensibly)
-
 -Generating build.ninja files (or "updir.ninja" and let build.ninja wrap
  those if desired?) in subdirectories that invoke a build from the parent
  directory
