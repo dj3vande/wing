@@ -1,0 +1,1 @@
+library libwing source all C getopt.c

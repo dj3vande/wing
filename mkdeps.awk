@@ -22,6 +22,13 @@ BEGIN {
 	rules["library"] = "ar";
 }
 
+BEGIN { dir = "."; }
+
+$1 == "subdirectory" {
+	ARGV[ARGC++] = "dir=" dir "/" $2;
+	ARGV[ARGC++] = dir "/" $2 "/" $3;
+}
+
 $1 == "suffix" {
 	if($2 in suffixes) {
 		print FILENAME ":" FNR ": Warning: Replacing previously defined suffixes for filetype '" $2 "'" >> "/dev/stderr";
@@ -83,7 +90,7 @@ $1 == "toolchain" {
 
 #Collect sources
 ($3 == "source") {
-	module = $2;
+	module = dir "/" $2;
 	platform = $4;
 	type = $5;
 	if(!($1 in rules)) {
@@ -93,17 +100,17 @@ $1 == "toolchain" {
 	mod_platforms[module, platform] = 1;
 	for (i=6; i<=NF; i++) {
 		old = sources[module, platform, type];
-		sources[module, platform, type] = old " " $i;
+		sources[module, platform, type] = old " " dir "/" $i;
 	}
 }
 
 #Collect module types and sanity-check
 ($1 == "program") || ($1 == "library") {
-	if (!($2 in modules)) {
-		modules[$2] = $1;
+	if (!((dir "/" $2) in modules)) {
+		modules[dir "/" $2] = $1;
 	}
-	if (modules[$2] != $1) {
-		print FILENAME ":" FNR ": Module " $2 " was previously named with type " modules[$2] >> "/dev/stderr";
+	if (modules[dir "/" $2] != $1) {
+		print FILENAME ":" FNR ": Module " $2 " in directory " dir " was previously named with type " modules[dir "/" $2] >> "/dev/stderr";
 		fail = 1;
 	}
 }
@@ -134,22 +141,26 @@ function write_rules(toolchain) {
 		for (i=1; i<=n; i++) {
 			# sub substitutes in-place
 			basename = get_base_name("C", local_srcs[i]);
-			objname = get_out_name(toolchain, "obj", toolchain "/" basename);
+			objname = get_out_name(toolchain, "obj", basename);
+			sub("[^/]*$", toolchain "/&", objname);
 			print "build " objname " : " toolchain "cc " local_srcs[i];
 			local_inputsbytype["obj"] = local_inputsbytype["obj"] " " objname;
 			local_linkinputs = local_linkinputs " " objname;
 		}
 		n = split(get_sources(module, platform, "library"), local_srcs, " ");
 		for (i=1; i<=n; i++) {
-			libname = get_out_name(toolchain, "library", toolchain "/" local_srcs[i]);
+			libname = get_out_name(toolchain, "library", local_srcs[i]);
+			sub("[^/]*$", toolchain "/&", libname);
 			local_linkinputs = local_linkinputs " " libname;
 			local_inputsbytype["library"] = local_inputsbytype["library"] " " libname;
 		}
 
-		outname = get_out_name(toolchain, modules[module], toolchain "/" module);
+		basename = module;
+		sub("[^/]*$", toolchain "/&", basename);
+		outname = get_out_name(toolchain, modules[module], basename);
 		rule = toolchain rules[modules[module]];
 		print "build " outname " : " rule local_linkinputs;
-		print " out_base = " toolchain "/" module;
+		print " out_base = " basename;
 		for (type in local_inputsbytype) {
 			print " in_" type " =" local_inputsbytype[type];
 		}

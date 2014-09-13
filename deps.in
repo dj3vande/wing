@@ -12,15 +12,7 @@ toolchain mingw win32 windows 32
 toolchain ppc unix osx-ppc 32
 toolchain wine win32 wine 32
 
-#libwing
-library libwing/libwing source all C libwing/getopt.c
-
-#expand (Windows has its own)
-program expand/expand source unix C expand/expand.c
-program expand/expand source unix library libwing/libwing
-program expand/wexpand source win32 C expand/expand.c
-program expand/wexpand source win32 library libwing/libwing
-
-#unexpand
-program unexpand/unexpand source all C unexpand/unexpand.c
-program unexpand/unexpand source all library libwing/libwing
+#Build information from subdirectories
+subdirectory libwing deps.in
+subdirectory expand deps.in
+subdirectory unexpand deps.in
