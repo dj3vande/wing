@@ -1,10 +1,27 @@
 Things mkdeps doesn't support but should:
 
--Including description files from subdirectories (local view instead
- of requiring everything to be defined in a single place)
- Note that this will also make it easy to move build directories closer
- to the sources they're building from, since internal state will have
- path-prefix and actual filename without needing to do the splitting itself.
+-"export" and "import" to avoid needing to pull in "../libpath/library"
+  from subdirectories' deps.in
+
+-Allowing more control of build location
+  Options that reasonable people may want:
+    -In-tree host-only build
+     (source/path/file)
+    -In-tree build for host, subdirectories under source directory for other
+     toolchains
+     (sourcepath/file and sourcepath/toolchain/file)
+    -Subdirectories under source directory for each toolchain
+     (sourcepath/toolchain/file)
+    -Subdirectories under top-level directory for each toolchain
+     (toolchain/sourcepath/file)
+    -Separate build directory, grouped by toolchain
+     (build/toolchain/sourcepath/file)
+    -Separate build directory, grouped by source path
+     (build/sourcepath/toolchain/file)
+  If a setup that supports all of these also supports some other weird cases
+  (say, build/toolchain/sourcepathpath/toolchain/file or
+  sourcepath/build/toolchain/file) we may as well leave those in and possibly
+  make a few unreasonable people happy too.
 
 -Generating phony rules like "default_${dir}" to build things in a particular
  place (and what they depend on)
