@@ -181,4 +181,10 @@ END {
 	for (tc in toolchains) {
 		write_rules(tc);
 	}
+
+	all_list = "";
+	for (tc in toolchains) {
+		all_list = all_list " " tc;
+	}
+	print "build all : phony" all_list;
 }
