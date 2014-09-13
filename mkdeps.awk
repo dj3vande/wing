@@ -15,6 +15,7 @@ $1 ~ /^#/ { next; }
 #                   using "("suffix")$".)
 #  rules[mod_type] = Base name of build rule ("link" or "ar" are currently
 #                    known) to build modules of that type
+#  exports[name, type, platform] = basename (including path) of exported source
 
 # TODO: Make configurable
 BEGIN {
@@ -86,6 +87,53 @@ function get_out_name(toolchain, type, base) {
 # $5 = bitness
 $1 == "toolchain" {
 	toolchains[$2] = $3;
+}
+
+
+#Exports and imports
+#Note that imports are resolved when we encounter them; it's up to the
+#user to generate a non-cyclic dependency graph on subdirectory includes
+#and put the includes in a toposorted order.
+#This may change if a sufficiently compelling use case is produced.
+#An export for platform "all" will match any platform on an import; an
+#export with a specific platform will only match that platform (only an
+#export for "all" will match an import for "all").
+
+$1 == "export" {
+	type = $2;
+	platform = $3;
+	basename = dir "/" $4;
+	name = $5;
+	if ((name, type, platform) in exports) {
+		print FILENAME ":" FNR ": Export '" name "' (type '" type "', platform '" platform "') already exists with basename " exports[name, type, platform] >> "/dev/stderr";
+		fail = 1;
+	}
+	exports[name, type, platform] = basename;
+}
+
+$3 == "import" {
+	module = dir "/" $2;
+	platform = $4;
+	type = $5;
+	if(!($1 in rules)) {
+		print FILENAME ":" FNR ": Module " $2 " has unknown type '"$1"'" >> "/dev/stderr";
+		fail=1;
+	}
+	mod_platforms[module, platform] = 1;
+	for (i=6; i<=NF; i++) {
+		if (($i, type, platform) in exports) {
+			basename = exports[$i, type, platform];
+			old = sources[module, platform, type];
+			sources[module, platform, type] = old " " basename;
+		} else if (($i, type, "all") in exports) {
+			basename = exports[$i, type, "all"];
+			old = sources[module, platform, type];
+			sources[module, platform, type] = old " " basename;
+		} else {
+			print FILENAME ":" FNR ": Import '" $i "' has not been exported from anywhere! (type '" type "', platform '" platform "'" >> "/dev/stderr";
+			fail=1;
+		}
+	}
 }
 
 #Collect sources

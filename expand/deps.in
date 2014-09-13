@@ -1,6 +1,6 @@
 # Windows has its own expand, that does something different.
 # So our expand is called "wexpand" on Windows.
 program expand source unix C expand.c
-program expand source unix library ../libwing/libwing
+program expand import unix library libwing
 program wexpand source win32 C expand.c
-program wexpand source win32 library ../libwing/libwing
+program wexpand import win32 library libwing

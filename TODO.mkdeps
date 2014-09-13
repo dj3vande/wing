@@ -1,8 +1,5 @@
 Things mkdeps doesn't support but should:
 
--"export" and "import" to avoid needing to pull in "../libpath/library"
-  from subdirectories' deps.in
-
 -Allowing more control of build location
   Options that reasonable people may want:
     -In-tree host-only build
