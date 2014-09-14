@@ -1,9 +1,11 @@
+#!/usr/bin/env ninja -f
+
 cflags = -W -Wall -ansi -pedantic -O -I. -Werror
 
 include rules.ninja
 
 rule mkdeps
- command = awk -f mkdeps.awk depfile=${out}.d outfile=${out} ${in}
+ command = ./mkdeps.awk depfile=${out}.d outfile=${out} ${in}
  depfile = ${out}.d
  generator = 1
 build deps.ninja : mkdeps deps.in | mkdeps.awk

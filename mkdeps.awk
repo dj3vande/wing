@@ -1,4 +1,4 @@
-#!awk -f
+#!/usr/bin/awk -f
 
 #Collect a list of files
 BEGIN { input_files = ""; }
