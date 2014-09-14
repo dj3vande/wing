@@ -3,18 +3,10 @@ cflags = -W -Wall -ansi -pedantic -O -I. -Werror
 include rules.ninja
 
 rule mkdeps
- command = awk -f mkdeps.awk ${in} > ${out}
+ command = awk -f mkdeps.awk depfile=${out}.d outfile=${out} ${in}
+ depfile = ${out}.d
  generator = 1
 build deps.ninja : mkdeps deps.in | mkdeps.awk
 build build.ninja : phony deps.ninja
-
-#dir = ./libwing
-#subninja libwing/subbuild.ninja
-
-#dir = ./expand
-#subninja expand/subbuild.ninja
-
-#dir = ./unexpand
-#subninja unexpand/subbuild.ninja
 
 include deps.ninja

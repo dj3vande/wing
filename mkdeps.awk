@@ -1,5 +1,9 @@
 #!awk -f
 
+#Collect a list of files
+BEGIN { input_files = ""; }
+FNR == 1 { input_files = input_files " " FILENAME; }
+
 #Munch comments
 $1 ~ /^#/ { next; }
 
@@ -167,6 +171,14 @@ function get_sources(module, platform, type) {
 	return sources[module, "all", type] " " sources[module, platform, type];
 }
 
+function build_line(str) {
+	if (outfile) {
+		print str > outfile;
+	} else {
+		print str;
+	}
+}
+
 function write_rules(toolchain) {
 	platform = toolchains[toolchain];
 
@@ -191,7 +203,7 @@ function write_rules(toolchain) {
 			basename = get_base_name("C", local_srcs[i]);
 			objname = get_out_name(toolchain, "obj", basename);
 			sub("[^/]*$", toolchain "/&", objname);
-			print "build " objname " : " toolchain "cc " local_srcs[i];
+			build_line("build " objname " : " toolchain "cc " local_srcs[i]);
 			local_inputsbytype["obj"] = local_inputsbytype["obj"] " " objname;
 			local_linkinputs = local_linkinputs " " objname;
 		}
@@ -207,10 +219,10 @@ function write_rules(toolchain) {
 		sub("[^/]*$", toolchain "/&", basename);
 		outname = get_out_name(toolchain, modules[module], basename);
 		rule = toolchain rules[modules[module]];
-		print "build " outname " : " rule local_linkinputs;
-		print " out_base = " basename;
+		build_line("build " outname " : " rule local_linkinputs);
+		build_line(" out_base = " basename);
 		for (type in local_inputsbytype) {
-			print " in_" type " =" local_inputsbytype[type];
+			build_line(" in_" type " =" local_inputsbytype[type]);
 		}
 
 		if (modules[module] == "program") {
@@ -218,7 +230,7 @@ function write_rules(toolchain) {
 		}
 	}
 	if (local_programs != "") {
-		print "build " toolchain " : phony" local_programs;
+		build_line("build " toolchain " : phony" local_programs);
 	}
 }
 
@@ -245,5 +257,13 @@ END {
 	for (tc in toolchains) {
 		all_list = all_list " " tc;
 	}
-	print "build all : phony" all_list;
+	build_line("build all : phony" all_list);
+
+	if (outfile) {
+		close(outfile);
+		if(depfile) {
+			print outfile ":" input_files > depfile;
+			close(depfile);
+		}
+	}
 }
