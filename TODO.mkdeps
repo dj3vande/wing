@@ -1,36 +1,12 @@
 Things mkdeps doesn't support but should:
 
 -Allowing more control of build location
-  Options that reasonable people may want:
-    -In-tree host-only build
-     (source/path/file)
-    -In-tree build for host, subdirectories under source directory for other
-     toolchains
-     (sourcepath/file and sourcepath/toolchain/file)
-    -Subdirectories under source directory for each toolchain
-     (sourcepath/toolchain/file)
-    -Subdirectories under top-level directory for each toolchain
-     (toolchain/sourcepath/file)
-    -Separate build directory, grouped by toolchain
-     (build/toolchain/sourcepath/file)
-    -Separate build directory, grouped by source path
-     (build/sourcepath/toolchain/file)
-  If a setup that supports all of these also supports some other weird cases
-  (say, build/toolchain/sourcepathpath/toolchain/file or
-  sourcepath/build/toolchain/file) we may as well leave those in and possibly
-  make a few unreasonable people happy too.
 
 -Generating phony rules like "default_${dir}" to build things in a particular
  place (and what they depend on)
-  -Should include "${toolchain}_${dir}" to build a particular directory's
-   things with a single toolchain (parallel to top-level toolchain phony rules)
-  -Also to build a particular module?
-  -Should support future expansions (test, tags, ...) as they get added
 
--Running tests, including a stamp file to indicate that is up to date if a
- test has passed and nothing the test depends on has changed
-  -Test program that reports pass/fail by exit status
-  -Actual/expected output diff
+-Running tests (including a stamp file that is up to date if a test has
+ passed and nothing the test depends on has changed)
 
 -Auxiliary rules for things like tags (tests might land here too); for the
  bonus round, give the input description enough power that we don't need
@@ -64,7 +40,5 @@ Things mkdeps doesn't support but should:
 
 -Spaces in filenames (need to handle quoting on input to keep awk from
  splitting as multiple fields, and on output for ninja)
-
--Finer-grained control over where build outputs go
 
 -A fancy name (shuriken?)
