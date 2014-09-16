@@ -130,7 +130,7 @@ matcher(struct re_guts *g, char *string, size_t nmatch, regmatch_t pmatch[],
     int eflags)
 {
 	char *endp;
-	int i;
+	size_t i;
 	struct match mv;
 	struct match *m = &mv;
 	char *dp;

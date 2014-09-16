@@ -34,13 +34,14 @@
  *	@(#)regcomp.c	8.5 (Berkeley) 3/20/94
  */
 
-#include <sys/types.h>
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
 #include <limits.h>
 #include <stdlib.h>
-#include <regex.h>
+
+#include <libwing/regex.h>
+#include <libwing/openbsd.h>
 
 #include "utils.h"
 #include "regex2.h"
@@ -249,8 +250,8 @@ static void
 p_ere(struct parse *p, int stop)	/* character this ERE should end at */
 {
 	char c;
-	sopno prevback;
-	sopno prevfwd;
+	sopno prevback=0;
+	sopno prevfwd=0;
 	sopno conc;
 	int first = 1;		/* is this the first alternative? */
 
@@ -1093,7 +1094,7 @@ nomem:
 static void
 freeset(struct parse *p, cset *cs)
 {
-	int i;
+	size_t i;
 	cset *top = &p->g->sets[p->g->ncsets];
 	size_t css = (size_t)p->g->csetsize;
 
@@ -1116,7 +1117,7 @@ static int			/* set number */
 freezeset(struct parse *p, cset *cs)
 {
 	uch h = cs->hash;
-	int i;
+	size_t i;
 	cset *top = &p->g->sets[p->g->ncsets];
 	cset *cs2;
 	size_t css = (size_t)p->g->csetsize;
@@ -1146,7 +1147,7 @@ freezeset(struct parse *p, cset *cs)
 static int			/* character; there is no "none" value */
 firstch(struct parse *p, cset *cs)
 {
-	int i;
+	size_t i;
 	size_t css = (size_t)p->g->csetsize;
 
 	for (i = 0; i < css; i++)
@@ -1162,7 +1163,7 @@ firstch(struct parse *p, cset *cs)
 static int
 nch(struct parse *p, cset *cs)
 {
-	int i;
+	size_t i;
 	size_t css = (size_t)p->g->csetsize;
 	int n = 0;
 
@@ -1205,6 +1206,8 @@ mcadd( struct parse *p, cset *cs, char *cp)
 static void
 mcinvert(struct parse *p, cset *cs)
 {
+	(void)p;
+	(void)cs;
 	assert(cs->multis == NULL);	/* xxx */
 }
 
@@ -1218,6 +1221,8 @@ mcinvert(struct parse *p, cset *cs)
 static void
 mccase(struct parse *p, cset *cs)
 {
+	(void)p;
+	(void)cs;
 	assert(cs->multis == NULL);	/* xxx */
 }
 
@@ -1426,8 +1431,8 @@ static void
 findmust(struct parse *p, struct re_guts *g)
 {
 	sop *scan;
-	sop *start;    /* start initialized in the default case, after that */
-	sop *newstart; /* newstart was initialized in the OCHAR case */
+	sop *start=NULL;    /* start initialized in the default case, after that */
+	sop *newstart=NULL; /* newstart was initialized in the OCHAR case */
 	sopno newlen;
 	sop s;
 	char *cp;

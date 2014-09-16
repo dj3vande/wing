@@ -34,13 +34,14 @@
  *	@(#)regerror.c	8.4 (Berkeley) 3/20/94
  */
 
-#include <sys/types.h>
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
 #include <limits.h>
 #include <stdlib.h>
-#include <regex.h>
+
+#include <libwing/openbsd.h>
+#include <libwing/regex.h>
 
 #include "utils.h"
 

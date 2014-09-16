@@ -41,13 +41,13 @@
  * macros that code uses.  This lets the same code operate on two different
  * representations for state sets.
  */
-#include <sys/types.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>
 #include <ctype.h>
-#include <regex.h>
+
+#include <libwing/regex.h>
 
 #include "utils.h"
 #include "regex2.h"
@@ -155,7 +155,7 @@ regexec(const regex_t *preg, const char *string, size_t nmatch,
 		return(REG_BADPAT);
 	eflags = GOODFLAGS(eflags);
 
-	if (g->nstates <= CHAR_BIT*sizeof(states1) && !(eflags&REG_LARGE))
+	if (g->nstates <= (sopno)(CHAR_BIT*sizeof(states1)) && !(eflags&REG_LARGE))
 		return(smatcher(g, s, nmatch, pmatch, eflags));
 	else
 		return(lmatcher(g, s, nmatch, pmatch, eflags));

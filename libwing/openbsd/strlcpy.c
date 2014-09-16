@@ -16,8 +16,9 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#include <sys/types.h>
 #include <string.h>
+
+#include <libwing/openbsd.h>
 
 /*
  * Copy src to string dst of size siz.  At most siz-1 characters
