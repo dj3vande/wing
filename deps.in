@@ -1,0 +1,18 @@
+#Name generation rules
+suffix obj .o
+suffix library .a
+suffix C .c
+template mingw program %.exe
+template wine program %.exe %.exe.so
+
+#toolchains
+toolchain host unix osx 32
+toolchain host64 unix osx 64
+toolchain mingw win32 windows 32
+toolchain ppc unix osx-ppc 32
+toolchain wine win32 wine 32
+
+#Build information from subdirectories
+subdirectory libwing deps.in
+subdirectory expand deps.in
+subdirectory unexpand deps.in

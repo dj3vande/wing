@@ -1,0 +1,44 @@
+Things mkdeps doesn't support but should:
+
+-Allowing more control of build location
+
+-Generating phony rules like "default_${dir}" to build things in a particular
+ place (and what they depend on)
+
+-Running tests (including a stamp file that is up to date if a test has
+ passed and nothing the test depends on has changed)
+
+-Auxiliary rules for things like tags (tests might land here too); for the
+ bonus round, give the input description enough power that we don't need
+ built-in knowledge of them.
+
+-Generating build.ninja files (or "updir.ninja" and let build.ninja wrap
+ those if desired?) in subdirectories that invoke a build from the parent
+ directory
+  -These should by default run things for the local directory only, with
+   "run it for the whole source tree" rules also available.
+
+-Configurable source-based rule definitions
+ i.e. we want to be able to say things like
+	rule cc C -> obj
+	rule link [obj] [library] -> program
+	rule ar [obj] -> library
+	rule yacc yacc -> C
+ instead of having the rules and corresponding filetype transformations
+ built in
+
+-In-tree code generators (may need special magic to know which toolchain
+ to use to build things we run as part of the build; alternatively, if
+ requiring the user to encode that in rules.ninja is sensible, we still
+ need to know that this build step requires that target to be built first)
+
+-Cartesian products (for these back-ends, and these front-ends, build every
+ backend+frontend pair)
+
+-Automagic discovery of toolchains and generation of rules.ninja (probably
+ in an auxiliary helper script and not mkdeps proper)
+
+-Spaces in filenames (need to handle quoting on input to keep awk from
+ splitting as multiple fields, and on output for ninja)
+
+-A fancy name (shuriken?)

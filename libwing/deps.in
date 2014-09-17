@@ -1,0 +1,3 @@
+library libwing source all C getopt.c
+#export <sourcetype> <platform> <basename> <export-name>
+export library all libwing libwing

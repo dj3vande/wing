@@ -3,3 +3,10 @@
 *.o
 *.a
 *.exe
+deps.ninja
+host/
+host64/
+mingw/
+ppc/
+tags
+wine/
