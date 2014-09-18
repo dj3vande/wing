@@ -17,3 +17,4 @@ subdirectory libwing deps.in
 subdirectory expand deps.in
 subdirectory unexpand deps.in
 subdirectory grep deps.in
+subdirectory glob deps.in
