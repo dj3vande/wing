@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include <libwing/getopt.h>
+#include <libwing/libwing.h>
 #include <libwing/regex.h>
 
 regex_t grep_regex;
@@ -64,6 +65,25 @@ int grep_file(FILE *in, FILE *out)
 	return feof(in) ? 0 : -1;
 }
 
+int do_grep(const char *file, void *venv)
+{
+	int *error_occurred = venv;
+	FILE *in=fopen(file, "r");
+	if(in==NULL)
+	{
+		perror(file);
+		*error_occurred=1;
+		return 0;
+	}
+	if(grep_file(in, stdout) == -1)
+	{
+		perror(file);
+		*error_occurred=1;
+	}
+	fclose(in);
+	return 0;
+}
+
 int main(int argc, char **argv)
 {
 	int opt;
@@ -114,18 +134,8 @@ int main(int argc, char **argv)
 
 	for(i=optind+1; i<argc; i++)
 	{
-		FILE *in=fopen(argv[i], "r");
-		if(in == NULL)
-		{
-			perror(argv[i]);
-			exit(EXIT_FAILURE);
-		}
-		if(grep_file(in, stdout) == -1)
-		{
-			perror(argv[i]);
-			error_occurred=1;
-		}
-		fclose(in);
+		if(wing_glob_foreach(argv[i], do_grep, &error_occurred) == 0)
+			fprintf(stderr, "%s: %s: No such file\n", argv[0], argv[i]);
 	}
 
 	regfree(&grep_regex);
