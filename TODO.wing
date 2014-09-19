@@ -4,8 +4,6 @@ Things WING should support but doesn't
 -Unicode
 -Locale-specific behavior
 
--Filename globbing on Windows (the shell doesn't do it for us there)
-
 -Full SUSv3 functionality of grep
 
 -fmt (which unfortunately doesn't seem to be standardized)
