@@ -2,6 +2,7 @@
 #include <stdlib.h>
 
 #include <libwing/getopt.h>
+#include <libwing/libwing.h>
 
 /*TODO: Support a list of tab stops instead of regular spacing*/
 static unsigned tabstop = 8;	/*8 = SUSv3 default*/
@@ -47,10 +48,31 @@ int expand_file(FILE *in, FILE *out)
 	return ferror(in) ? -1 : 0;
 }
 
+int do_expand(const char *file, void *venv)
+{
+	int ret=0;
+	FILE *in=fopen(file, "r");
+	if(in == NULL)
+	{
+		perror(file);
+		*(int *)venv = EXIT_FAILURE;
+		return -1;
+	}
+	if(expand_file(in, stdout) == -1)
+	{
+		perror(file);
+		ret=-1;
+		*(int *)venv = EXIT_FAILURE;
+	}
+	fclose(in);
+	return ret;
+}
+
 int main(int argc, char **argv)
 {
 	int opt;
 	int i;
+	int ret=0;
 
 	while((opt = getopt(argc, argv, "t:")) != -1)
 	{
@@ -90,20 +112,9 @@ int main(int argc, char **argv)
 
 	for(i=optind; i<argc; i++)
 	{
-		FILE *in=fopen(argv[i], "r");
-		if(in == NULL)
-		{
-			perror(argv[i]);
-			exit(EXIT_FAILURE);
-		}
-		if(expand_file(in, stdout) == -1)
-		{
-			perror(argv[i]);
-			fclose(in);
-			exit(EXIT_FAILURE);
-		}
-		fclose(in);
+		if(wing_glob_foreach(argv[i], do_expand, &ret) == 0)
+			fprintf(stderr, "%s: %s: No such file\n", argv[0], argv[i]);
 	}
 
-	return 0;
+	return ret;
 }
