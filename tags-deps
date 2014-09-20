@@ -1,0 +1,19 @@
+#!/usr/bin/awk -f
+
+BEGIN { FS="\t"; }
+
+FNR == 1 {
+	dirname = FILENAME;
+	sub("/[^/]*$", "/", dirname);
+	outfiles = FILENAME " " outfiles;
+}
+
+/^!/ { next; }
+
+{ infiles[dirname $2] = 1; }
+
+END {
+	for (file in infiles)
+		deps = deps " " file;
+	print outfiles ":" deps;
+}
