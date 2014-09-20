@@ -11,6 +11,7 @@ Things mkdeps doesn't support but should:
 -Auxiliary rules for things like tags (tests might land here too); for the
  bonus round, give the input description enough power that we don't need
  built-in knowledge of them.
+ [tags are done; anything else?]
 
 -Generating build.ninja files (or "updir.ninja" and let build.ninja wrap
  those if desired?) in subdirectories that invoke a build from the parent
