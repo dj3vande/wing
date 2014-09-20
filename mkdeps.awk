@@ -20,6 +20,8 @@ $1 ~ /^#/ { next; }
 #  rules[mod_type] = Base name of build rule ("link" or "ar" are currently
 #                    known) to build modules of that type
 #  exports[name, type, platform] = basename (including path) of exported source
+#  export_paths[name, type, platform] = dirname of exported source
+#  tagdirs[dir] = directories to look in for tags file in dir
 
 # TODO: Make configurable
 BEGIN {
@@ -113,6 +115,21 @@ $1 == "export" {
 		fail = 1;
 	}
 	exports[name, type, platform] = basename;
+	export_paths[name, type, platform] = dir;
+}
+
+#Collect module types and sanity-check
+($1 == "program") || ($1 == "library") {
+	if (!(dir in tagdirs)) {
+		tagdirs[dir] = dir;
+	}
+	if (!((dir "/" $2) in modules)) {
+		modules[dir "/" $2] = $1;
+	}
+	if (modules[dir "/" $2] != $1) {
+		print FILENAME ":" FNR ": Module " $2 " in directory " dir " was previously named with type " modules[dir "/" $2] >> "/dev/stderr";
+		fail = 1;
+	}
 }
 
 $3 == "import" {
@@ -129,10 +146,12 @@ $3 == "import" {
 			basename = exports[$i, type, platform];
 			old = sources[module, platform, type];
 			sources[module, platform, type] = old " " basename;
+			tagdirs[dir] = tagdirs[dir] " " export_paths[$i, type, platform];
 		} else if (($i, type, "all") in exports) {
 			basename = exports[$i, type, "all"];
 			old = sources[module, platform, type];
 			sources[module, platform, type] = old " " basename;
+			tagdirs[dir] = tagdirs[dir] " " export_paths[$i, type, "all"];
 		} else {
 			print FILENAME ":" FNR ": Import '" $i "' has not been exported from anywhere! (type '" type "', platform '" platform "'" >> "/dev/stderr";
 			fail=1;
@@ -153,17 +172,6 @@ $3 == "import" {
 	for (i=6; i<=NF; i++) {
 		old = sources[module, platform, type];
 		sources[module, platform, type] = old " " dir "/" $i;
-	}
-}
-
-#Collect module types and sanity-check
-($1 == "program") || ($1 == "library") {
-	if (!((dir "/" $2) in modules)) {
-		modules[dir "/" $2] = $1;
-	}
-	if (modules[dir "/" $2] != $1) {
-		print FILENAME ":" FNR ": Module " $2 " in directory " dir " was previously named with type " modules[dir "/" $2] >> "/dev/stderr";
-		fail = 1;
 	}
 }
 
@@ -258,6 +266,13 @@ END {
 		all_list = all_list " " tc;
 	}
 	build_line("build all : phony" all_list);
+
+	for (dir in tagdirs) {
+		build_line("build " dir "/tags : ctags");
+		build_line(" in_dirs =" tagdirs[dir]);
+		alltags = alltags " " dir "/tags";
+	}
+	build_line("build tags : phony" alltags);
 
 	if (outfile) {
 		close(outfile);

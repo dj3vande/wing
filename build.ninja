@@ -14,12 +14,5 @@ build build.ninja : phony deps.ninja
 rule ctags
  command = ctags -R --tag-relative -o ${out} ${in_dirs} && ./tags-deps ${out} > ${out}.d
  depfile = ${out}.d
-build expand/tags : ctags
- in_dirs = expand libwing
-build unexpand/tags : ctags
- in_dirs = unexpand libwing
-build libwing/tags : ctags
- in_dirs = libwing
-build tags : phony expand/tags unexpand/tags libwing/tags
 
 include deps.ninja
