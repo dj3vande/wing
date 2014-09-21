@@ -1,11 +1,34 @@
 #!/usr/bin/awk -f
 
-#Collect a list of files
+################################################################
+## depfile handling
+################################################################
 BEGIN { input_files = ""; }
 FNR == 1 { input_files = input_files " " FILENAME; }
+END {
+	if(outfile && depfile) {
+		print outfile ":" input_files > depfile;
+		close(depfile);
+	}
+}
 
-#Munch comments
+################################################################
+## Munch comments (needs to come after any FNR==1 rules)
+################################################################
 $1 ~ /^#/ { next; }
+
+################################################################
+## Error handling
+################################################################
+BEGIN { errfile="/dev/stderr"; }
+function errmsg(msg) { print msg >> errfile; }
+function warn(msg) { errmsg(FILENAME ":" FNR ": Warning: " msg); }
+function error(msg) { errmsg(FILENAME ":" FNR ": Error: " msg); fail=1; }
+function die(msg) { errmsg(msg); fail=1; exit 1; }
+END {
+	close(errfile);
+	if (fail) exit 1;
+}
 
 #Global arrays:
 #  toolchains[toolchain_name] = platform for toolchain
@@ -39,7 +62,7 @@ $1 == "subdirectory" {
 
 $1 == "suffix" {
 	if($2 in suffixes) {
-		print FILENAME ":" FNR ": Warning: Replacing previously defined suffixes for filetype '" $2 "'" >> "/dev/stderr";
+		warn("Replacing previously defined suffixes for filetype '" $2 "'");
 	}
 	suffixes[$2] = $3;
 	for(i=4; i<=NF; i++) {
@@ -49,7 +72,7 @@ $1 == "suffix" {
 
 $1 == "template" {
 	if(($2,$3) in templates) {
-		print FILENAME ":" FNR ": Warning: Replacing previously defined template for toolchain '" $2 "', filetype '" $3 "'" >> "/dev/stderr";
+		warn("Replacing previously defined template for toolchain '" $2 "', filetype '" $3 "'");
 	}
 	templates[$2,$3] = $4;
 	for(i=5; i<=NF; i++) {
@@ -112,8 +135,7 @@ $1 == "export" {
 	basename = dir "/" $4;
 	name = $5;
 	if ((name, type, platform) in exports) {
-		print FILENAME ":" FNR ": Export '" name "' (type '" type "', platform '" platform "') already exists with basename " exports[name, type, platform] >> "/dev/stderr";
-		fail = 1;
+		error("Export '" name "' (type '" type "', platform '" platform "') already exists with basename " exports[name, type, platform]);
 	}
 	exports[name, type, platform] = basename;
 	export_paths[name, type, platform] = dir;
@@ -128,8 +150,7 @@ $1 == "export" {
 		modules[dir "/" $2] = $1;
 	}
 	if (modules[dir "/" $2] != $1) {
-		print FILENAME ":" FNR ": Module " $2 " in directory " dir " was previously named with type " modules[dir "/" $2] >> "/dev/stderr";
-		fail = 1;
+		error("Module " $2 " in directory " dir " was previously named with type " modules[dir "/" $2]);
 	}
 }
 
@@ -138,8 +159,7 @@ $3 == "import" {
 	platform = $4;
 	type = $5;
 	if(!($1 in rules)) {
-		print FILENAME ":" FNR ": Module " $2 " has unknown type '"$1"'" >> "/dev/stderr";
-		fail=1;
+		error("Module " $2 " has unknown type '"$1"'");
 	}
 	mod_platforms[module, platform] = 1;
 	for (i=6; i<=NF; i++) {
@@ -154,8 +174,7 @@ $3 == "import" {
 			sources[module, platform, type] = old " " basename;
 			tagdirs[dir] = tagdirs[dir] " " export_paths[$i, type, "all"];
 		} else {
-			print FILENAME ":" FNR ": Import '" $i "' has not been exported from anywhere! (type '" type "', platform '" platform "'" >> "/dev/stderr";
-			fail=1;
+			error("Import '" $i "' has not been exported from anywhere! (type '" type "', platform '" platform "'");
 		}
 	}
 }
@@ -166,8 +185,7 @@ $3 == "import" {
 	platform = $4;
 	type = $5;
 	if(!($1 in rules)) {
-		print FILENAME ":" FNR ": Module " $2 " has unknown type '"$1"'" >> "/dev/stderr";
-		fail=1;
+		error("Module " $2 " has unknown type '"$1"'");
 	}
 	mod_platforms[module, platform] = 1;
 	for (i=6; i<=NF; i++) {
@@ -241,10 +259,6 @@ function write_rules(toolchain) {
 }
 
 END {
-	if (fail) {
-		exit 1;
-	}
-
 	for (tc in toolchains) {
 		write_rules(tc);
 	}
@@ -258,8 +272,7 @@ END {
 	for (ruledep in phonydeps) {
 		n=split(ruledep, temp, SUBSEP);
 		if(n != 2) {
-			print "Internal error: Bad array index '"ruledep"' (expected rule SUBSEP dependency)" >> "/dev/stderr";
-			exit 1;
+			die("Internal error: Bad array index '"ruledep"' (expected rule SUBSEP dependency)");
 		}
 		rule = temp[1];
 		dep = temp[2];
@@ -271,9 +284,5 @@ END {
 
 	if (outfile) {
 		close(outfile);
-		if(depfile) {
-			print outfile ":" input_files > depfile;
-			close(depfile);
-		}
 	}
 }
