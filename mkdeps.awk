@@ -48,6 +48,16 @@ function joininputs(start, sep)
 	for(i=start+1; i<=NF; i++) ret = ret sep $i;
 	return ret;
 }
+function unsplit(a, n, fs, LOCALS, ret)
+{
+	if(!fs) fs=" ";
+	if(n==0) return "";
+	ret=a[1];
+	for(i=2; i<=n; i++)
+		ret = ret fs a[i];
+	return ret;
+}
+
 
 ################################################################
 ## Subdirectory import handling
@@ -281,19 +291,25 @@ function write_rules(toolchain, LOCALS, split_srcs, linkinputs, basename, inputs
 		n = split(get_intermediates(module, platform, "obj"), split_srcs, " ");
 		for (i=1; i<=n; i++)
 		{
-			objname = get_out_name(toolchain, "obj", split_srcs[i]);
-			sub("[^/]*$", toolchain "/&", objname);
-			inputsbytype["obj"] = inputsbytype["obj"] " " objname;
-			linkinputs = linkinputs " " objname;
+			split_srcs[i] = get_out_name(toolchain, "obj", split_srcs[i]);
+			sub("[^/]*$", toolchain "/&", split_srcs[i]);
+		}
+		if(n>0)
+		{
+			inputsbytype["obj"] = unsplit(split_srcs, n, " ");
+			linkinputs = linkinputs " " inputsbytype["obj"];
 		}
 
 		n = split(get_sources(module, platform, "library"), split_srcs, " ");
 		for (i=1; i<=n; i++)
 		{
-			libname = get_out_name(toolchain, "library", split_srcs[i]);
-			sub("[^/]*$", toolchain "/&", libname);
-			linkinputs = linkinputs " " libname;
-			inputsbytype["library"] = inputsbytype["library"] " " libname;
+			split_srcs[i] = get_out_name(toolchain, "library", split_srcs[i]);
+			sub("[^/]*$", toolchain "/&", split_srcs[i]);
+		}
+		if(n>0)
+		{
+			inputsbytype["library"] = unsplit(split_srcs, n, " ");
+			linkinputs = linkinputs " " inputsbytype["library"];
 		}
 
 		basename = module;
@@ -304,7 +320,7 @@ function write_rules(toolchain, LOCALS, split_srcs, linkinputs, basename, inputs
 		build_line(" out_base = " basename);
 		for (type in inputsbytype)
 		{
-			build_line(" in_" type " =" inputsbytype[type]);
+			build_line(" in_" type " = " inputsbytype[type]);
 		}
 
 		if (modules[module] == "program")
