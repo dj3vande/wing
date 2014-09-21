@@ -123,14 +123,36 @@ function get_out_name(toolchain, type, base)
 ################################################################
 ## Global variables:
 ##   sources[module, platform, type] = space-separated filenames
+##   intermediates[module, platform, type] = space-separated basenames
+##   compile_result[type] = type of output
 ################################################################
+BEGIN \
+{
+	#TODO: Get this from the input file
+	compile_result["C"] = "obj";
+}
+function add_intermediate(module, platform, type, basename)
+{
+	intermediates[module, platform, type] = intermediates[module, platform, type] " " basename;
+	if(type in compile_result)
+		add_intermediate(module, platform, compile_result[type], basename);
+}
 function add_source(module, platform, type, name, LOCALS, basename)
 {
 	sources[module, platform, type] = sources[module, platform, type] " " name;
+	if(type in compile_result)
+	{
+		basename = get_base_name(type, name);
+		add_intermediate(module, platform, compile_result[type], basename);
+	}
 }
 function get_sources(module, platform, type)
 {
 	return sources[module, "all", type] " " sources[module, platform, type];
+}
+function get_intermediates(module, platform, type)
+{
+	return intermediates[module, "all", type] " " intermediates[module, platform, type];
 }
 
 #Global arrays:
@@ -234,7 +256,7 @@ function build_line(str)
 	else print str;
 }
 
-function write_rules(toolchain)
+function write_rules(toolchain, LOCALS, split_srcs, linkinputs, basename, inputsbytype)
 {
 	platform = toolchains[toolchain];
 
@@ -243,44 +265,46 @@ function write_rules(toolchain)
 		if (!((module, "all") in mod_platforms || (module, platform) in mod_platforms))
 			continue;
 
-		#Clear out inputs-by-type array, without breaking if it
-		# doesn't yet exist as an array
-		local_inputsbytype[""]="";
-		for(type in local_inputsbytype)
-		{
-			delete local_inputsbytype[type];
-		}
+		for(type in inputsbytype)
+			delete inputsbytype[type];
+		linkinputs = "";
 
-		local_linkinputs = "";
-		n = split(get_sources(module, platform, "C"), local_srcs, " ");
-		for (i=1; i<=n; i++)
+		n = split(get_sources(module, platform, "C"), split_srcs, " ");
+		for(i=1; i<=n; i++)
 		{
-			# sub substitutes in-place
-			basename = get_base_name("C", local_srcs[i]);
+			basename = get_base_name("C", split_srcs[i]);
 			objname = get_out_name(toolchain, "obj", basename);
 			sub("[^/]*$", toolchain "/&", objname);
-			build_line("build " objname " : " toolchain "cc " local_srcs[i]);
-			local_inputsbytype["obj"] = local_inputsbytype["obj"] " " objname;
-			local_linkinputs = local_linkinputs " " objname;
+			build_line("build " objname " : " toolchain "cc " split_srcs[i]);
 		}
-		n = split(get_sources(module, platform, "library"), local_srcs, " ");
+
+		n = split(get_intermediates(module, platform, "obj"), split_srcs, " ");
 		for (i=1; i<=n; i++)
 		{
-			libname = get_out_name(toolchain, "library", local_srcs[i]);
+			objname = get_out_name(toolchain, "obj", split_srcs[i]);
+			sub("[^/]*$", toolchain "/&", objname);
+			inputsbytype["obj"] = inputsbytype["obj"] " " objname;
+			linkinputs = linkinputs " " objname;
+		}
+
+		n = split(get_sources(module, platform, "library"), split_srcs, " ");
+		for (i=1; i<=n; i++)
+		{
+			libname = get_out_name(toolchain, "library", split_srcs[i]);
 			sub("[^/]*$", toolchain "/&", libname);
-			local_linkinputs = local_linkinputs " " libname;
-			local_inputsbytype["library"] = local_inputsbytype["library"] " " libname;
+			linkinputs = linkinputs " " libname;
+			inputsbytype["library"] = inputsbytype["library"] " " libname;
 		}
 
 		basename = module;
 		sub("[^/]*$", toolchain "/&", basename);
 		outname = get_out_name(toolchain, modules[module], basename);
 		rule = toolchain rules[modules[module]];
-		build_line("build " outname " : " rule local_linkinputs);
+		build_line("build " outname " : " rule linkinputs);
 		build_line(" out_base = " basename);
-		for (type in local_inputsbytype)
+		for (type in inputsbytype)
 		{
-			build_line(" in_" type " =" local_inputsbytype[type]);
+			build_line(" in_" type " =" inputsbytype[type]);
 		}
 
 		if (modules[module] == "program")
