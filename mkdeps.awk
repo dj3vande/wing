@@ -22,6 +22,7 @@ $1 ~ /^#/ { next; }
 #  exports[name, type, platform] = basename (including path) of exported source
 #  export_paths[name, type, platform] = dirname of exported source
 #  tagdirs[dir] = directories to look in for tags file in dir
+#  phonydeps[rule, dependency] = 1 (phony rule accumulator)
 
 # TODO: Make configurable
 BEGIN {
@@ -190,8 +191,6 @@ function build_line(str) {
 function write_rules(toolchain) {
 	platform = toolchains[toolchain];
 
-	local_programs = "";
-
 	for (module in modules) {
 		if (!((module, "all") in mod_platforms || (module, platform) in mod_platforms)) {
 			continue;
@@ -234,11 +233,10 @@ function write_rules(toolchain) {
 		}
 
 		if (modules[module] == "program") {
-			local_programs = local_programs " " outname;
+			phonydeps[toolchain, outname] = 1;
+			phonydeps[module, outname] = 1;
+			phonydeps["all", module] = 1;
 		}
-	}
-	if (local_programs != "") {
-		build_line("build " toolchain " : phony" local_programs);
 	}
 }
 
@@ -247,32 +245,29 @@ END {
 		exit 1;
 	}
 
-	#Toolchain notes:
-	#mingw (and Win32 toolchains in general) need to know to put
-	# a '.exe' suffix on programs.
-	#winegcc requires more general pattern-matching, since when given
-	# '-o foo' to create an executable it actually creates two files,
-	# foo.exe and foo.exe.so (so the build line writer needs to write
-	# both output files, and give a 'base_name = foo' for the rule to
-	# use.
-	#Toolchain-specific name generation for things like object files
-	# and libraries is also required before we're ready for prime time.
 	for (tc in toolchains) {
 		write_rules(tc);
 	}
 
-	all_list = "";
-	for (tc in toolchains) {
-		all_list = all_list " " tc;
-	}
-	build_line("build all : phony" all_list);
-
 	for (dir in tagdirs) {
 		build_line("build " dir "/tags : ctags");
 		build_line(" in_dirs =" tagdirs[dir]);
-		alltags = alltags " " dir "/tags";
+		phonydeps["tags", dir"/tags"] = 1;
 	}
-	build_line("build tags : phony" alltags);
+
+	for (ruledep in phonydeps) {
+		n=split(ruledep, temp, SUBSEP);
+		if(n != 2) {
+			print "Internal error: Bad array index '"ruledep"' (expected rule SUBSEP dependency)" >> "/dev/stderr";
+			exit 1;
+		}
+		rule = temp[1];
+		dep = temp[2];
+		phony[rule] = phony[rule] " " dep;
+	}
+	for (rule in phony) {
+		build_line("build " rule " : phony" phony[rule]);
+	}
 
 	if (outfile) {
 		close(outfile);
