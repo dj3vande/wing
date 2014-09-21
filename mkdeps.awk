@@ -187,6 +187,11 @@ function build_line(str)
 	if(outfile) print str > outfile;
 	else print str;
 }
+function add_toolchain_dir(toolchain, path)
+{
+	sub("[^/]*$", toolchain "/&", path);
+	return path;
+}
 function write_compile_rules(toolchain, module, LOCALS, platform, type, n, splitsources, basename, outname)
 {
 	platform = toolchains[toolchain];
@@ -199,7 +204,7 @@ function write_compile_rules(toolchain, module, LOCALS, platform, type, n, split
 			{
 				basename = get_base_name(type, splitsources[i]);
 				outname = get_out_name(toolchain, compile_result[type], basename);
-				sub("[^/]*$", toolchain "/&", outname);
+				outname = add_toolchain_dir(toolchain, outname);
 				build_line("build " outname " : " toolchain compile_rules[type] " " splitsources[i]);
 			}
 		}
@@ -312,7 +317,7 @@ function write_rules(toolchain, LOCALS, split_srcs, linkinputs, basename, inputs
 		for (i=1; i<=n; i++)
 		{
 			split_srcs[i] = get_out_name(toolchain, "obj", split_srcs[i]);
-			sub("[^/]*$", toolchain "/&", split_srcs[i]);
+			split_srcs[i] = add_toolchain_dir(toolchain, split_srcs[i]);
 		}
 		if(n>0)
 		{
@@ -324,7 +329,7 @@ function write_rules(toolchain, LOCALS, split_srcs, linkinputs, basename, inputs
 		for (i=1; i<=n; i++)
 		{
 			split_srcs[i] = get_out_name(toolchain, "library", split_srcs[i]);
-			sub("[^/]*$", toolchain "/&", split_srcs[i]);
+			split_srcs[i] = add_toolchain_dir(toolchain, split_srcs[i]);
 		}
 		if(n>0)
 		{
@@ -332,8 +337,7 @@ function write_rules(toolchain, LOCALS, split_srcs, linkinputs, basename, inputs
 			linkinputs = linkinputs " " inputsbytype["library"];
 		}
 
-		basename = module;
-		sub("[^/]*$", toolchain "/&", basename);
+		basename = add_toolchain_dir(toolchain, module);
 		outname = get_out_name(toolchain, modules[module], basename);
 		rule = toolchain link_rules[modules[module]];
 		build_line("build " outname " : " rule linkinputs);
