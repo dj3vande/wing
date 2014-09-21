@@ -3,6 +3,13 @@
 ################################################################
 ## depfile handling
 ################################################################
+## Argument variables:
+##   outfile = file to write output to (default: stdout)
+##   depfile = file to write dependencies to (default: none)
+################################################################
+## Global variables:
+##   input_files = list of files read
+################################################################
 BEGIN { input_files = ""; }
 FNR == 1 { input_files = input_files " " FILENAME; }
 END {
@@ -20,7 +27,10 @@ $1 ~ /^#/ { next; }
 ################################################################
 ## Error handling
 ################################################################
-BEGIN { errfile="/dev/stderr"; }
+## Argument variable:
+##   errfile = file to write error messages to (default: stderr)
+################################################################
+BEGIN { if(!errfile) errfile="/dev/stderr"; }
 function errmsg(msg) { print msg >> errfile; }
 function warn(msg) { errmsg(FILENAME ":" FNR ": Warning: " msg); }
 function error(msg) { errmsg(FILENAME ":" FNR ": Error: " msg); fail=1; }
