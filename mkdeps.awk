@@ -118,11 +118,24 @@ function get_out_name(toolchain, type, base)
 	return ret;
 }
 
+################################################################
+## Source file bookkeeping
+################################################################
+## Global variables:
+##   sources[module, platform, type] = space-separated filenames
+################################################################
+function add_source(module, platform, type, name, LOCALS, basename)
+{
+	sources[module, platform, type] = sources[module, platform, type] " " name;
+}
+function get_sources(module, platform, type)
+{
+	return sources[module, "all", type] " " sources[module, platform, type];
+}
+
 #Global arrays:
 #  toolchains[toolchain_name] = platform for toolchain
 #  modules[module_name] = type (also serves as list of all known modules)
-#  sources[module, platform, type] = list of sources for module grouped
-#                                    by platform and type
 #  mod_platforms[module_name, platform] = 1 (list of module/platforms)
 #  rules[mod_type] = Base name of build rule ("link" or "ar" are currently
 #                    known) to build modules of that type
@@ -187,22 +200,18 @@ $3 == "import" \
 	for (i=6; i<=NF; i++)
 	{
 		if (($i, type, platform) in exports)
+			imp_platform = platform;
+		else
+			imp_platform = "all";
+		if (($i, type, imp_platform) in exports)
 		{
-			basename = exports[$i, type, platform];
-			old = sources[module, platform, type];
-			sources[module, platform, type] = old " " basename;
-			tagdirs[dir] = tagdirs[dir] " " export_paths[$i, type, platform];
-		}
-		else if (($i, type, "all") in exports)
-		{
-			basename = exports[$i, type, "all"];
-			old = sources[module, platform, type];
-			sources[module, platform, type] = old " " basename;
-			tagdirs[dir] = tagdirs[dir] " " export_paths[$i, type, "all"];
+			basename = exports[$i, type, imp_platform];
+			add_source(module, platform, type, basename);
+			tagdirs[dir] = tagdirs[dir] " " export_paths[$i, type, imp_platform];
 		}
 		else
 		{
-			error("Import '" $i "' has not been exported from anywhere! (type '" type "', platform '" platform "'");
+			error("Unresolved import '" $i "' (type '" type "', platform '" platform "'");
 		}
 	}
 }
@@ -216,15 +225,7 @@ $3 == "import" \
 	if(!($1 in rules)) error("Module " $2 " has unknown type '"$1"'");
 	mod_platforms[module, platform] = 1;
 	for (i=6; i<=NF; i++)
-	{
-		old = sources[module, platform, type];
-		sources[module, platform, type] = old " " dir "/" $i;
-	}
-}
-
-function get_sources(module, platform, type)
-{
-	return sources[module, "all", type] " " sources[module, platform, type];
+		add_source(module, platform, type, dir "/" $i);
 }
 
 function build_line(str)
