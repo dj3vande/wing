@@ -40,16 +40,83 @@ END {
 	if (fail) exit 1;
 }
 
+################################################################
+## Assorted slicing and dicing
+################################################################
+function joininputs(start, sep) {
+	ret = $start;
+	for(i=start+1; i<=NF; i++) ret = ret sep $i;
+	return ret;
+}
+
+################################################################
+## Subdirectory import handling
+################################################################
+## File syntax:
+##   subdirectory <subdir-name> <filename>
+################################################################
+## Global variables:
+##   dir = directory of current file, relative to top level
+################################################################
+BEGIN { dir = "."; }
+$1 == "subdirectory" {
+	ARGV[ARGC++] = "dir=" dir "/" $2;
+	ARGV[ARGC++] = dir "/" $2 "/" $3;
+	next;
+}
+
+################################################################
+## Filename generation
+################################################################
+## File syntax:
+##   suffix <type> <suffix>...
+##   template <toolchain> <type> <template-%-is-basename>
+################################################################
+## Global variables:
+##   suffixes[type] = suffix for outputs
+##   suffixres[type] = end-anchored ERE matching suffix of inputs
+##   templates[toolchain, type] = template for building outname
+################################################################
+$1 == "suffix" {
+	type = $2;
+	if(type in suffixes) warn("Replacing previously defined suffixes for filetype '" type "'");
+	suffixes[type] = $3;
+	temp = joininputs(3, "|");
+	gsub("\\.", "\\.", temp);
+	suffixres[type]="("temp")$";
+	next;
+}
+$1 == "template" {
+	toolchain = $2;
+	type = $3;
+	if((toolchain,type) in templates) {
+		warn("Replacing previously defined template for toolchain '" toolchain "', filetype '" type "'");
+	}
+	templates[toolchain,type] = joininputs(4, " ");
+	next;
+}
+function get_base_name(type, name) {
+	if(type in suffixres) gsub(suffixres[type], "", name);
+	return name;
+}
+function get_template(toolchain, type) {
+	if((toolchain, type) in templates) return templates[toolchain, type];
+	else if((toolchain, "all") in templates) return templates[toolchain, "all"];
+	else if(type in suffixes) return "%" suffixes[type];
+	else return "%";
+}
+function get_out_name(toolchain, type, base) {
+	ret = get_template(toolchain, type);
+	gsub("%", base, ret);
+	return ret;
+}
+
 #Global arrays:
 #  toolchains[toolchain_name] = platform for toolchain
 #  modules[module_name] = type (also serves as list of all known modules)
 #  sources[module, platform, type] = list of sources for module grouped
 #                                    by platform and type
 #  mod_platforms[module_name, platform] = 1 (list of module/platforms)
-#  templates[toolchain, type] = templates for output filenames
-#  suffixes[type] = almost-ERE matching extension for input filenames
-#                   (the ERE is formed by gsub("\\.","\\.",suffix) and then
-#                   using "("suffix")$".)
 #  rules[mod_type] = Base name of build rule ("link" or "ar" are currently
 #                    known) to build modules of that type
 #  exports[name, type, platform] = basename (including path) of exported source
@@ -61,63 +128,6 @@ END {
 BEGIN {
 	rules["program"] = "link";
 	rules["library"] = "ar";
-}
-
-BEGIN { dir = "."; }
-
-$1 == "subdirectory" {
-	ARGV[ARGC++] = "dir=" dir "/" $2;
-	ARGV[ARGC++] = dir "/" $2 "/" $3;
-}
-
-$1 == "suffix" {
-	if($2 in suffixes) {
-		warn("Replacing previously defined suffixes for filetype '" $2 "'");
-	}
-	suffixes[$2] = $3;
-	for(i=4; i<=NF; i++) {
-		suffixes[$2] = suffixes[$2] "|" $i;
-	}
-}
-
-$1 == "template" {
-	if(($2,$3) in templates) {
-		warn("Replacing previously defined template for toolchain '" $2 "', filetype '" $3 "'");
-	}
-	templates[$2,$3] = $4;
-	for(i=5; i<=NF; i++) {
-		templates[$2,$3] = templates[$2,$3] " " $i;
-	}
-}
-
-function get_base_name(type, name) {
-	if(type in suffixes) {
-		suffix = suffixes[type];
-		gsub("\\.", "\\.", suffix);
-		gsub("("suffix")$", "", name);
-	}
-	return name;
-}
-
-function get_out_name(toolchain, type, base) {
-	if((toolchain, type) in templates) {
-		retval = templates[toolchain, type];
-		gsub("%", base, retval);
-		return retval;
-	}
-	if(("all", type) in templates) {
-		retval = templates["all", type];
-		gsub("%", base, retval);
-		return retval;
-	}
-	if(type in suffixes) {
-		#If there are multiple suffixes allowed, assume the first
-		#  one is preferred
-		suffix = suffixes[type];
-		sub("\\|.*", "", suffix);
-		return base suffix;
-	}
-	return base;
 }
 
 #Toolchains
@@ -280,12 +290,12 @@ END {
 	}
 
 	for (ruledep in phonydeps) {
-		n=split(ruledep, temp, SUBSEP);
+		n=split(ruledep, temparr, SUBSEP);
 		if(n != 2) {
 			die("Internal error: Bad array index '"ruledep"' (expected rule SUBSEP dependency)");
 		}
-		rule = temp[1];
-		dep = temp[2];
+		rule = temparr[1];
+		dep = temparr[2];
 		phony[rule] = phony[rule] " " dep;
 	}
 	for (rule in phony) {
