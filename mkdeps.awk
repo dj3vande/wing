@@ -165,23 +165,56 @@ function get_intermediates(module, platform, type)
 	return intermediates[module, "all", type] " " intermediates[module, platform, type];
 }
 
+################################################################
+## Build rule generation
+################################################################
+## Argument variables:
+##   outfile = file to write output to (default: stdout)
+################################################################
+## Global variables:
+##   compile_rules[type] = base rule to compile source
+##   link_rules[type] = base rule to compile output module type
+################################################################
+BEGIN \
+{
+	# TODO: Make configurable
+	compile_rules["C"] = "cc";
+	link_rules["program"] = "link";
+	link_rules["library"] = "ar";
+}
+function build_line(str)
+{
+	if(outfile) print str > outfile;
+	else print str;
+}
+function write_compile_rules(toolchain, module, LOCALS, platform, type, n, splitsources, basename, outname)
+{
+	platform = toolchains[toolchain];
+	for(type in compile_rules)
+	{
+		n = split(get_sources(module, platform, type), splitsources, " ");
+		if(n > 0)
+		{
+			for(i=1; i<=n; i++)
+			{
+				basename = get_base_name(type, splitsources[i]);
+				outname = get_out_name(toolchain, compile_result[type], basename);
+				sub("[^/]*$", toolchain "/&", outname);
+				build_line("build " outname " : " toolchain compile_rules[type] " " splitsources[i]);
+			}
+		}
+	}
+}
+
 #Global arrays:
 #  toolchains[toolchain_name] = platform for toolchain
 #  modules[module_name] = type (also serves as list of all known modules)
 #  mod_platforms[module_name, platform] = 1 (list of module/platforms)
-#  rules[mod_type] = Base name of build rule ("link" or "ar" are currently
-#                    known) to build modules of that type
 #  exports[name, type, platform] = basename (including path) of exported source
 #  export_paths[name, type, platform] = dirname of exported source
 #  tagdirs[dir] = directories to look in for tags file in dir
 #  phonydeps[rule, dependency] = 1 (phony rule accumulator)
 
-# TODO: Make configurable
-BEGIN \
-{
-	rules["program"] = "link";
-	rules["library"] = "ar";
-}
 
 #Toolchains
 # $2 = toolchain name
@@ -227,7 +260,7 @@ $3 == "import" \
 	module = dir "/" $2;
 	platform = $4;
 	type = $5;
-	if(!($1 in rules)) error("Module " $2 " has unknown type '"$1"'");
+	if(!($1 in link_rules)) error("Module " $2 " has unknown type '"$1"'");
 	mod_platforms[module, platform] = 1;
 	for (i=6; i<=NF; i++)
 	{
@@ -254,16 +287,10 @@ $3 == "import" \
 	module = dir "/" $2;
 	platform = $4;
 	type = $5;
-	if(!($1 in rules)) error("Module " $2 " has unknown type '"$1"'");
+	if(!($1 in link_rules)) error("Module " $2 " has unknown type '"$1"'");
 	mod_platforms[module, platform] = 1;
 	for (i=6; i<=NF; i++)
 		add_source(module, platform, type, dir "/" $i);
-}
-
-function build_line(str)
-{
-	if (outfile) print str > outfile;
-	else print str;
 }
 
 function write_rules(toolchain, LOCALS, split_srcs, linkinputs, basename, inputsbytype)
@@ -279,14 +306,7 @@ function write_rules(toolchain, LOCALS, split_srcs, linkinputs, basename, inputs
 			delete inputsbytype[type];
 		linkinputs = "";
 
-		n = split(get_sources(module, platform, "C"), split_srcs, " ");
-		for(i=1; i<=n; i++)
-		{
-			basename = get_base_name("C", split_srcs[i]);
-			objname = get_out_name(toolchain, "obj", basename);
-			sub("[^/]*$", toolchain "/&", objname);
-			build_line("build " objname " : " toolchain "cc " split_srcs[i]);
-		}
+		write_compile_rules(toolchain, module);
 
 		n = split(get_intermediates(module, platform, "obj"), split_srcs, " ");
 		for (i=1; i<=n; i++)
@@ -315,7 +335,7 @@ function write_rules(toolchain, LOCALS, split_srcs, linkinputs, basename, inputs
 		basename = module;
 		sub("[^/]*$", toolchain "/&", basename);
 		outname = get_out_name(toolchain, modules[module], basename);
-		rule = toolchain rules[modules[module]];
+		rule = toolchain link_rules[modules[module]];
 		build_line("build " outname " : " rule linkinputs);
 		build_line(" out_base = " basename);
 		for (type in inputsbytype)
