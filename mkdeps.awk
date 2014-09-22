@@ -239,7 +239,7 @@ function write_compile_rules(toolchain, module, LOCALS, platform, type, n, split
 #  mod_platforms[module_name, platform] = 1 (list of module/platforms)
 #  exports[name, type, platform] = basename (including path) of exported source
 #  export_paths[name, type, platform] = dirname of exported source
-#  tagdirs[dir] = directories to look in for tags file in dir
+#  tagdirs[dir,look] = 1 (directories to look in for tags file in dir)
 #  phonydeps[rule, dependency] = 1 (phony rule accumulator)
 
 
@@ -277,7 +277,7 @@ $1 == "export" \
 #Collect module types and sanity-check
 ($1 == "program") || ($1 == "library") \
 {
-	if (!(dir in tagdirs)) tagdirs[dir] = dir;
+	tagdirs[dir, dir] = 1;
 	if (!((dir "/" $2) in modules)) modules[dir "/" $2] = $1;
 	if (modules[dir "/" $2] != $1) error("Module " $2 " in directory " dir " was previously named with type " modules[dir "/" $2]);
 }
@@ -299,7 +299,7 @@ $3 == "import" \
 		{
 			basename = exports[$i, type, imp_platform];
 			add_source(module, platform, type, basename);
-			tagdirs[dir] = tagdirs[dir] " " export_paths[$i, type, imp_platform];
+			tagdirs[dir, export_paths[$i, type, imp_platform]] = 1;
 		}
 		else
 		{
@@ -385,10 +385,11 @@ END \
 		write_rules(tc);
 	}
 
-	for (dir in tagdirs)
+	collect(tagdirs, tags);
+	for (dir in tags)
 	{
 		build_line("build " dir "/tags : ctags");
-		build_line(" in_dirs =" tagdirs[dir]);
+		build_line(" in_dirs = " tags[dir]);
 		phonydeps["tags", dir"/tags"] = 1;
 	}
 
