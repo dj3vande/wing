@@ -58,6 +58,28 @@ function unsplit(a, n, fs, LOCALS, ret)
 	return ret;
 }
 
+# On output, each arr1[left] is a fs-separated list of values of right
+# such that arr2[left, right] exists.
+# 1-dimensional indices of arr2 are ignored; 3+-dimensional indices are
+# split at the first SUBSEP, so arr2[a, b, c] causes b SUBSEP c to go
+# in arr1[a]'s list.
+function collect(arr2, arr1, fs, LOCALS, both, left, right, n)
+{
+	if(!fs) fs=" ";
+	for(n in arr1) delete arr1[n];
+	for(both in arr2)
+	{
+		n = index(both, SUBSEP);
+		if(n==0)
+			continue;
+		left = substr(both, 1, n-1);
+		right = substr(both, n+length(SUBSEP));
+		if(left in arr1)
+			arr1[left] = arr1[left] fs;
+		arr1[left] = arr1[left] right;
+	}
+}
+
 
 ################################################################
 ## Subdirectory import handling
@@ -370,20 +392,10 @@ END \
 		phonydeps["tags", dir"/tags"] = 1;
 	}
 
-	for (ruledep in phonydeps)
-	{
-		n=split(ruledep, temparr, SUBSEP);
-		if(n != 2)
-		{
-			die("Internal error: Bad array index '"ruledep"' (expected rule SUBSEP dependency)");
-		}
-		rule = temparr[1];
-		dep = temparr[2];
-		phony[rule] = phony[rule] " " dep;
-	}
+	collect(phonydeps, phony);
 	for (rule in phony)
 	{
-		build_line("build " rule " : phony" phony[rule]);
+		build_line("build " rule " : phony " phony[rule]);
 	}
 
 	if (outfile)
