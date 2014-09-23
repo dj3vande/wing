@@ -1,2 +1,3 @@
-program unexpand source all C unexpand.c
-program unexpand import all library libwing
+program unexpand
+source all C unexpand.c
+import all library libwing

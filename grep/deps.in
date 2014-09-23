@@ -1,2 +1,3 @@
-program grep source all C grep.c
-program grep import all library libwing
+program grep
+source all C grep.c
+import all library libwing

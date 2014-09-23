@@ -94,6 +94,7 @@ BEGIN { dir = "."; }
 $1 == "subdirectory" \
 {
 	ARGV[ARGC++] = "dir=" dir "/" $2;
+	ARGV[ARGC++] = "module=" module;
 	ARGV[ARGC++] = dir "/" $2 "/" $3;
 	next;
 }
@@ -275,21 +276,20 @@ $1 == "export" \
 }
 
 #Collect module types and sanity-check
-($1 == "program") || ($1 == "library") \
+$1 in link_rules \
 {
 	tagdirs[dir, dir] = 1;
-	if (!((dir "/" $2) in modules)) modules[dir "/" $2] = $1;
-	if (modules[dir "/" $2] != $1) error("Module " $2 " in directory " dir " was previously named with type " modules[dir "/" $2]);
+	module = dir "/" $2;
+	if (!(module in modules)) modules[module] = $1;
+	if (modules[module] != $1) error("Module " $2 " in directory " dir " was previously named with type " modules[dir "/" $2]);
 }
 
-$3 == "import" \
+$1 == "import" \
 {
-	module = dir "/" $2;
-	platform = $4;
-	type = $5;
-	if(!($1 in link_rules)) error("Module " $2 " has unknown type '"$1"'");
+	platform = $2;
+	type = $3;
 	mod_platforms[module, platform] = 1;
-	for (i=6; i<=NF; i++)
+	for (i=4; i<=NF; i++)
 	{
 		if (($i, type, platform) in exports)
 			imp_platform = platform;
@@ -309,14 +309,12 @@ $3 == "import" \
 }
 
 #Collect sources
-($3 == "source") \
+$1 == "source" \
 {
-	module = dir "/" $2;
-	platform = $4;
-	type = $5;
-	if(!($1 in link_rules)) error("Module " $2 " has unknown type '"$1"'");
+	platform = $2;
+	type = $3;
 	mod_platforms[module, platform] = 1;
-	for (i=6; i<=NF; i++)
+	for (i=4; i<=NF; i++)
 		add_source(module, platform, type, dir "/" $i);
 }
 
