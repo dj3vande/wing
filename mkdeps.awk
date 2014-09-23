@@ -82,6 +82,43 @@ function collect(arr2, arr1, fs, LOCALS, both, left, right, n)
 
 
 ################################################################
+## Tag file tracking
+################################################################
+## We need to do this before we get to anything with a 'next' rule.
+################################################################
+## Global variables:
+##   tagdirs[dir,look] = 1 (directories to look in for tags file in dir)
+##   export_paths[name, type, platform] = dirname of exported source
+################################################################
+$1 in link_rules \
+{
+	tagdirs[dir, dir] = 1;
+}
+$1 == "export" \
+{
+	export_paths[$5, $2, $3] = dir;
+}
+$1 == "import" \
+{
+	for (i=4; i<=NF; i++)
+	{
+		imp_platform = ($i, $3, $2) in export_paths ? $2 : "all";
+		tagdirs[dir, export_paths[$i, $3, imp_platform]] = 1;
+	}
+}
+
+END \
+{
+	collect(tagdirs, tags);
+	for (dir in tags)
+	{
+		build_line("build " dir "/tags : ctags");
+		build_line(" in_dirs = " tags[dir]);
+		phonydeps["tags", dir"/tags"] = 1;
+	}
+}
+
+################################################################
 ## Subdirectory import handling
 ################################################################
 ## File syntax:
@@ -239,8 +276,6 @@ function write_compile_rules(toolchain, module, LOCALS, platform, type, n, split
 #  modules[module_name] = type (also serves as list of all known modules)
 #  mod_platforms[module_name, platform] = 1 (list of module/platforms)
 #  exports[name, type, platform] = basename (including path) of exported source
-#  export_paths[name, type, platform] = dirname of exported source
-#  tagdirs[dir,look] = 1 (directories to look in for tags file in dir)
 #  phonydeps[rule, dependency] = 1 (phony rule accumulator)
 
 
@@ -272,13 +307,11 @@ $1 == "export" \
 		error("Export '" name "' (type '" type "', platform '" platform "') already exists with basename " exports[name, type, platform]);
 	}
 	exports[name, type, platform] = basename;
-	export_paths[name, type, platform] = dir;
 }
 
 #Collect module types and sanity-check
 $1 in link_rules \
 {
-	tagdirs[dir, dir] = 1;
 	module = dir "/" $2;
 	if (!(module in modules)) modules[module] = $1;
 	if (modules[module] != $1) error("Module " $2 " in directory " dir " was previously named with type " modules[dir "/" $2]);
@@ -291,15 +324,11 @@ $1 == "import" \
 	mod_platforms[module, platform] = 1;
 	for (i=4; i<=NF; i++)
 	{
-		if (($i, type, platform) in exports)
-			imp_platform = platform;
-		else
-			imp_platform = "all";
+		imp_platform = ($i, type, platform) in exports ? platform : "all";
 		if (($i, type, imp_platform) in exports)
 		{
 			basename = exports[$i, type, imp_platform];
 			add_source(module, platform, type, basename);
-			tagdirs[dir, export_paths[$i, type, imp_platform]] = 1;
 		}
 		else
 		{
@@ -381,14 +410,6 @@ END \
 	for (tc in toolchains)
 	{
 		write_rules(tc);
-	}
-
-	collect(tagdirs, tags);
-	for (dir in tags)
-	{
-		build_line("build " dir "/tags : ctags");
-		build_line(" in_dirs = " tags[dir]);
-		phonydeps["tags", dir"/tags"] = 1;
 	}
 
 	collect(phonydeps, phony);
