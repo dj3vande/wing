@@ -1,4 +1,10 @@
-Copyright (c) 2014, Dave Vandervies <dj3vande@eskimo.com>
+This project includes parts of OpenBSD.  See the individual files for full
+copyright and license details.  The OpenBSD license is summarized at
+<http://www.openbsd.org/policy.html>.
+
+All other parts of this project are licensed as follows:
+
+Copyright (c) 2014, Dave Vandervies <dj3vande@terse.ca>
 
 Permission to use, copy, modify, and/or distribute this software for any
 purpose with or without fee is hereby granted, provided that the above

@@ -1,5 +1,0 @@
-build ${dir}/host/expand : hostlink ${dir}/host/expand.o libwing/host/libwing.a
-build ${dir}/host/expand.o : hostcc ${dir}/expand.c
-
-build ${dir}/mingw/expand.exe : mingwlink ${dir}/mingw/expand.o libwing/mingw/libwing.a
-build ${dir}/mingw/expand.o : mingwcc ${dir}/expand.c

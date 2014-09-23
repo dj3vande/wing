@@ -1,3 +1,8 @@
-library libwing source all C getopt.c
 #export <sourcetype> <platform> <basename> <export-name>
 export library all libwing libwing
+
+library libwing source all C getopt.c
+library libwing source unix C glob-dummy.c
+library libwing source win32 C glob-win32.c
+library libwing source all C openbsd/reallocarray.c openbsd/strlcpy.c
+library libwing source all C openbsd/regex/regcomp.c openbsd/regex/regerror.c openbsd/regex/regexec.c openbsd/regex/regfree.c

@@ -1,0 +1,2 @@
+program glob source all C glob.c
+program glob import all library libwing

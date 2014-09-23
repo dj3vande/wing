@@ -1,0 +1,35 @@
+Things WING should support but doesn't
+
+-Documentation
+-Unicode
+-Locale-specific behavior
+
+-Full SUSv3 functionality of grep
+
+-fmt (which unfortunately doesn't seem to be standardized)
+  -Basic functionality: Word-wrap lines to a (configurable, default 72
+   characters) maximum length, preserving indentation and recognizing
+   paragraph breaks
+  -separate goal/max width
+  -GNU -p (prefix on formatted text)
+  -BSD -p (allow indented paragraphs)
+  -BSD -d (characters that are sentence enders)
+  -extend sentence end detection to allow things like "...blah.)" to end
+   a sentence (-d character followed by characters from another configurable
+   set)
+  -BSD -s (canonicalize whitespace inside lines)
+  -BSD -l and -t (handling of tabs at beginning of line)
+
+-dc (RPN arbitrary-precision calculator, not in SUSv3)
+
+-A pager
+
+-A bunch of useful SUSv3 utilities
+  -find (with file type/status filters sensible for Win32)
+  -Assorted slicing and dicing: awk, sed, cut, paste, join, others?
+  -diff
+  -sort, uniq
+  -ex, vi
+  -head, tail (especially tail -f)
+  -xargs
+  (and probably more)
