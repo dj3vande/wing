@@ -183,6 +183,12 @@ function get_template(toolchain, type)
 }
 function get_out_name(toolchain, type, base)
 {
+	if(type in link_rules)
+	{
+		# Handle renames
+		if ((base, toolchains[toolchain]) in renames)
+			base = renames[base, toolchains[toolchain]];
+	}
 	ret = get_template(toolchain, type);
 	gsub("%", base, ret);
 	return ret;
@@ -321,6 +327,13 @@ $1 in link_rules \
 	if (!(module in modules)) modules[module] = $1;
 	if (modules[module] != $1) error("Module " $2 " in directory " dir " was previously named with type " modules[module]);
 }
+$1 == "rename" \
+{
+	newmod = dir SUBSEP $3;
+	if (newmod in modules) error("Can't rename module to something that already exists!");
+	renames[module, $2] = newmod;
+	next;
+}
 
 $1 == "import" \
 {
@@ -352,14 +365,19 @@ $1 == "source" \
 		add_source(module, platform, type, dir SUBSEP $i);
 }
 
-function write_rules(toolchain, LOCALS, split_srcs, linkinputs, basename, inputsbytype, modname)
+function write_rules(toolchain, LOCALS, split_srcs, linkinputs, basename, inputsbytype, modname, realname, realmod)
 {
 	platform = toolchains[toolchain];
 
 	for (module in modules)
 	{
+		if((module, platform) in renames) realmod = renames[module, platform];
+		else realmod = module;
+
 		modname = module;
 		gsub(SUBSEP, "/", modname);
+		realname = realmod;
+		gsub(SUBSEP, "/", realname);
 
 		if (!((module, "all") in mod_platforms || (module, platform) in mod_platforms))
 			continue;
@@ -394,7 +412,7 @@ function write_rules(toolchain, LOCALS, split_srcs, linkinputs, basename, inputs
 			linkinputs = linkinputs " " inputsbytype["library"];
 		}
 
-		basename = add_toolchain_dir(toolchain, module);
+		basename = add_toolchain_dir(toolchain, realmod);
 		outname = get_out_name(toolchain, modules[module], basename);
 		rule = toolchain link_rules[modules[module]];
 		build_line("build " outname " : " rule linkinputs);
