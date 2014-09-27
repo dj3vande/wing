@@ -249,7 +249,12 @@ function build_line(str)
 }
 function add_toolchain_dir(toolchain, path)
 {
-	sub("[^/]*$", toolchain "/&", path);
+	gsub(SUBSEP, "/" toolchain "/", path);
+	return path;
+}
+function get_srcdir_name(path)
+{
+	gsub(SUBSEP, "/", path);
 	return path;
 }
 function write_compile_rules(toolchain, module, LOCALS, platform, type, n, splitsources, basename, outname)
@@ -265,7 +270,7 @@ function write_compile_rules(toolchain, module, LOCALS, platform, type, n, split
 				basename = get_base_name(type, splitsources[i]);
 				outname = get_out_name(toolchain, compile_result[type], basename);
 				outname = add_toolchain_dir(toolchain, outname);
-				build_line("build " outname " : " toolchain compile_rules[type] " " splitsources[i]);
+				build_line("build " outname " : " toolchain compile_rules[type] " " get_srcdir_name(splitsources[i]));
 			}
 		}
 	}
@@ -300,7 +305,7 @@ $1 == "export" \
 {
 	type = $2;
 	platform = $3;
-	basename = dir "/" $4;
+	basename = dir SUBSEP $4;
 	name = $5;
 	if ((name, type, platform) in exports)
 	{
@@ -312,9 +317,9 @@ $1 == "export" \
 #Collect module types and sanity-check
 $1 in link_rules \
 {
-	module = dir "/" $2;
+	module = dir SUBSEP $2;
 	if (!(module in modules)) modules[module] = $1;
-	if (modules[module] != $1) error("Module " $2 " in directory " dir " was previously named with type " modules[dir "/" $2]);
+	if (modules[module] != $1) error("Module " $2 " in directory " dir " was previously named with type " modules[module]);
 }
 
 $1 == "import" \
@@ -344,15 +349,18 @@ $1 == "source" \
 	type = $3;
 	mod_platforms[module, platform] = 1;
 	for (i=4; i<=NF; i++)
-		add_source(module, platform, type, dir "/" $i);
+		add_source(module, platform, type, dir SUBSEP $i);
 }
 
-function write_rules(toolchain, LOCALS, split_srcs, linkinputs, basename, inputsbytype)
+function write_rules(toolchain, LOCALS, split_srcs, linkinputs, basename, inputsbytype, modname)
 {
 	platform = toolchains[toolchain];
 
 	for (module in modules)
 	{
+		modname = module;
+		gsub(SUBSEP, "/", modname);
+
 		if (!((module, "all") in mod_platforms || (module, platform) in mod_platforms))
 			continue;
 
@@ -399,8 +407,8 @@ function write_rules(toolchain, LOCALS, split_srcs, linkinputs, basename, inputs
 		if (modules[module] == "program")
 		{
 			phonydeps[toolchain, outname] = 1;
-			phonydeps[module, outname] = 1;
-			phonydeps["all", module] = 1;
+			phonydeps[modname, outname] = 1;
+			phonydeps["all", modname] = 1;
 		}
 	}
 }
