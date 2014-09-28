@@ -5,6 +5,9 @@ suffix C .c
 template mingw program %.exe
 template wine program %.exe %.exe.so
 
+#Compile rules
+compile cc C obj
+
 #toolchains
 toolchain host unix osx 32
 toolchain host64 unix osx 64

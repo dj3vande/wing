@@ -195,18 +195,28 @@ function get_out_name(toolchain, type, base)
 }
 
 ################################################################
+## Compile (TODO: and link) rules
+################################################################
+## File syntax:
+##   compile <rulebase> <input-type> <output-type>
+################################################################
+## Global variables:
+##   compile_result[type] = type of output
+##   compile_rules[type] = base rule to compile with
+################################################################
+$1 == "compile" \
+{
+	compile_result[$3] = $4;
+	compile_rules[$3] = $2;
+}
+
+################################################################
 ## Source file bookkeeping
 ################################################################
 ## Global variables:
 ##   sources[module, platform, type] = space-separated filenames
 ##   intermediates[module, platform, type] = space-separated basenames
-##   compile_result[type] = type of output
 ################################################################
-BEGIN \
-{
-	#TODO: Get this from the input file
-	compile_result["C"] = "obj";
-}
 function add_intermediate(module, platform, type, basename)
 {
 	intermediates[module, platform, type] = intermediates[module, platform, type] " " basename;
@@ -238,13 +248,12 @@ function get_intermediates(module, platform, type)
 ##   outfile = file to write output to (default: stdout)
 ################################################################
 ## Global variables:
-##   compile_rules[type] = base rule to compile source
 ##   link_rules[type] = base rule to compile output module type
+##   See also compile rule input handling
 ################################################################
 BEGIN \
 {
 	# TODO: Make configurable
-	compile_rules["C"] = "cc";
 	link_rules["program"] = "link";
 	link_rules["library"] = "ar";
 }
