@@ -74,7 +74,7 @@ function get_srcname_by_id(id)
 }
 function get_basename_by_id(id)
 {
-	return dirs[id] SUBSEP basenames[id];
+	return dirs[id] "/" basenames[id];
 }
 function get_outname_by_id(id, type, toolchain, LOCALS, base, ret)
 {
@@ -227,18 +227,6 @@ function get_template(toolchain, type)
 	else if(type in suffixes) return "%" suffixes[type];
 	else return "%";
 }
-function get_out_name(toolchain, type, base)
-{
-	if(type in link_rules)
-	{
-		# Handle renames
-		if ((base, toolchains[toolchain]) in renames)
-			base = renames[base, toolchains[toolchain]];
-	}
-	ret = get_template(toolchain, type);
-	gsub("%", base, ret);
-	return ret;
-}
 
 ################################################################
 ## Compile (TODO: and link) rules
@@ -379,10 +367,9 @@ $1 in link_rules \
 }
 $1 == "rename" \
 {
-	newname = dir SUBSEP $3;
-	oldname = get_basename_by_id(module);
+	newid = save_name(dir, $3);
 	#TODO: Check for renaming on top of something that already exists
-	renames[oldname, $2] = newname;
+	renames[module, $2] = newid;
 	next;
 }
 
@@ -416,16 +403,12 @@ $1 == "source" \
 		add_source(module, platform, type, $i);
 }
 
-function write_rules(toolchain, LOCALS, module, split_srcs, linkinputs, basename, inputsbytype, modname, realname)
+function write_rules(toolchain, LOCALS, module, split_srcs, linkinputs, basename, inputsbytype, modname, realmod, outname)
 {
 	platform = toolchains[toolchain];
 
 	for (module in modules)
 	{
-		modname = get_basename_by_id(module);
-		if((modname, platform) in renames) realname = renames[modname, platform];
-		else realname = modname;
-
 		if (!((module, "all") in mod_platforms || (module, platform) in mod_platforms))
 			continue;
 
@@ -457,8 +440,13 @@ function write_rules(toolchain, LOCALS, module, split_srcs, linkinputs, basename
 			linkinputs = linkinputs " " inputsbytype["library"];
 		}
 
-		basename = add_toolchain_dir(toolchain, realname);
-		outname = get_out_name(toolchain, modules[module], basename);
+		if((module, platform) in renames) realmod = renames[module, platform];
+		else realmod = module;
+
+		outname = get_outname_by_id(realmod, modules[module], toolchain);
+		basename = get_outname_by_id(realmod, "HACK: bogus type uses identity template", toolchain);
+		modname = get_basename_by_id(module);
+
 		rule = toolchain link_rules[modules[module]];
 		build_line("build " outname " : " rule linkinputs);
 		build_line(" out_base = " basename);
@@ -467,7 +455,6 @@ function write_rules(toolchain, LOCALS, module, split_srcs, linkinputs, basename
 			build_line(" in_" type " = " inputsbytype[type]);
 		}
 
-		gsub(SUBSEP, "/", modname);
 		phonydeps[toolchain, outname] = 1;
 		phonydeps[modname, outname] = 1;
 		phonydeps["all", modname] = 1;
