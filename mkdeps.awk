@@ -253,21 +253,19 @@ $1 == "compile" \
 ################################################################
 ## Global variables:
 ##   sources[module, platform, type] = space-separated IDs
-##   intermediates[module, platform, type] = space-separated basenames
+##   intermediates[module, platform, type] = space-separated IDs
 ################################################################
-function add_intermediate(module, platform, type, basename)
+function add_intermediate_by_id(module, platform, type, id)
 {
-	intermediates[module, platform, type] = intermediates[module, platform, type] " " basename;
+	intermediates[module, platform, type] = intermediates[module, platform, type] " " id;
 	if(type in compile_result)
-		add_intermediate(module, platform, compile_result[type], basename);
+		add_intermediate_by_id(module, platform, compile_result[type], id);
 }
 function add_source_by_id(module, platform, type, id)
 {
 	sources[module, platform, type] = sources[module, platform, type] " " id;
 	if(type in compile_result)
-	{
-		add_intermediate(module, platform, compile_result[type], get_basename_by_id(id));
-	}
+		add_intermediate_by_id(module, platform, compile_result[type], id);
 }
 function add_source(module, platform, type, name, LOCALS, basename, id)
 {
@@ -437,6 +435,7 @@ function write_rules(toolchain, LOCALS, split_srcs, linkinputs, basename, inputs
 		n = split(get_intermediates(module, platform, "obj"), split_srcs, " ");
 		for (i=1; i<=n; i++)
 		{
+			split_srcs[i] = get_basename_by_id(split_srcs[i]);
 			split_srcs[i] = get_out_name(toolchain, "obj", split_srcs[i]);
 			split_srcs[i] = add_toolchain_dir(toolchain, split_srcs[i]);
 		}
