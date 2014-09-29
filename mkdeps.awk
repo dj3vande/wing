@@ -76,6 +76,14 @@ function get_basename_by_id(id)
 {
 	return dirs[id] SUBSEP basenames[id];
 }
+function get_outname_by_id(id, type, toolchain, LOCALS, base, ret)
+{
+	ret = get_template(toolchain, type);
+	if(toolchain) toolchain=toolchain"/";
+	base = dirs[id] "/" toolchain basenames[id];
+	gsub("%", base, ret);
+	return ret;
+}
 
 ################################################################
 ## Assorted slicing and dicing
@@ -307,7 +315,7 @@ function add_toolchain_dir(toolchain, path)
 	gsub(SUBSEP, "/" toolchain "/", path);
 	return path;
 }
-function write_compile_rules(toolchain, module, LOCALS, platform, type, n, splitsources, basename, outname)
+function write_compile_rules(toolchain, module, LOCALS, platform, type, n, splitsources, outname)
 {
 	platform = toolchains[toolchain];
 	for(type in compile_rules)
@@ -317,9 +325,7 @@ function write_compile_rules(toolchain, module, LOCALS, platform, type, n, split
 		{
 			for(i=1; i<=n; i++)
 			{
-				basename = get_basename_by_id(splitsources[i]);
-				outname = get_out_name(toolchain, compile_result[type], basename);
-				outname = add_toolchain_dir(toolchain, outname);
+				outname = get_outname_by_id(splitsources[i], compile_result[type], toolchain);
 				build_line("build " outname " : " toolchain compile_rules[type] " " get_srcname_by_id(splitsources[i]));
 			}
 		}
@@ -432,9 +438,7 @@ function write_rules(toolchain, LOCALS, module, split_srcs, linkinputs, basename
 		n = split(get_inputs(module, platform, "obj"), split_srcs, " ");
 		for (i=1; i<=n; i++)
 		{
-			split_srcs[i] = get_basename_by_id(split_srcs[i]);
-			split_srcs[i] = get_out_name(toolchain, "obj", split_srcs[i]);
-			split_srcs[i] = add_toolchain_dir(toolchain, split_srcs[i]);
+			split_srcs[i] = get_outname_by_id(split_srcs[i], "obj", toolchain);
 		}
 		if(n>0)
 		{
@@ -445,9 +449,7 @@ function write_rules(toolchain, LOCALS, module, split_srcs, linkinputs, basename
 		n = split(get_inputs(module, platform, "library"), split_srcs, " ");
 		for (i=1; i<=n; i++)
 		{
-			split_srcs[i] = get_basename_by_id(split_srcs[i]);
-			split_srcs[i] = get_out_name(toolchain, "library", split_srcs[i]);
-			split_srcs[i] = add_toolchain_dir(toolchain, split_srcs[i]);
+			split_srcs[i] = get_outname_by_id(split_srcs[i], "library", toolchain);
 		}
 		if(n>0)
 		{
