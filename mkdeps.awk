@@ -328,8 +328,8 @@ function write_compile_rules(toolchain, module, LOCALS, platform, type, n, split
 
 #Global arrays:
 #  toolchains[toolchain_name] = platform for toolchain
-#  modules[module_name] = type (also serves as list of all known modules)
-#  mod_platforms[module_name, platform] = 1 (list of module/platforms)
+#  modules[id] = type (also serves as list of all known modules)
+#  mod_platforms[id, platform] = 1 (list of module/platforms)
 #  exports[name, type, platform] = ID of exported source
 #  phonydeps[rule, dependency] = 1 (phony rule accumulator)
 
@@ -367,15 +367,16 @@ $1 == "export" \
 #Collect module types and sanity-check
 $1 in link_rules \
 {
-	module = dir SUBSEP $2;
-	if (!(module in modules)) modules[module] = $1;
-	if (modules[module] != $1) error("Module " $2 " in directory " dir " was previously named with type " modules[module]);
+	module = save_name(dir, $2);
+	#TODO: Check for duplicate names
+	modules[module] = $1;
 }
 $1 == "rename" \
 {
-	newmod = dir SUBSEP $3;
-	if (newmod in modules) error("Can't rename module to something that already exists!");
-	renames[module, $2] = newmod;
+	newname = dir SUBSEP $3;
+	oldname = get_basename_by_id(module);
+	#TODO: Check for renaming on top of something that already exists
+	renames[oldname, $2] = newname;
 	next;
 }
 
@@ -409,19 +410,15 @@ $1 == "source" \
 		add_source(module, platform, type, $i);
 }
 
-function write_rules(toolchain, LOCALS, split_srcs, linkinputs, basename, inputsbytype, modname, realname, realmod)
+function write_rules(toolchain, LOCALS, module, split_srcs, linkinputs, basename, inputsbytype, modname, realname)
 {
 	platform = toolchains[toolchain];
 
 	for (module in modules)
 	{
-		if((module, platform) in renames) realmod = renames[module, platform];
-		else realmod = module;
-
-		modname = module;
-		gsub(SUBSEP, "/", modname);
-		realname = realmod;
-		gsub(SUBSEP, "/", realname);
+		modname = get_basename_by_id(module);
+		if((modname, platform) in renames) realname = renames[modname, platform];
+		else realname = modname;
 
 		if (!((module, "all") in mod_platforms || (module, platform) in mod_platforms))
 			continue;
@@ -458,7 +455,7 @@ function write_rules(toolchain, LOCALS, split_srcs, linkinputs, basename, inputs
 			linkinputs = linkinputs " " inputsbytype["library"];
 		}
 
-		basename = add_toolchain_dir(toolchain, realmod);
+		basename = add_toolchain_dir(toolchain, realname);
 		outname = get_out_name(toolchain, modules[module], basename);
 		rule = toolchain link_rules[modules[module]];
 		build_line("build " outname " : " rule linkinputs);
@@ -468,12 +465,10 @@ function write_rules(toolchain, LOCALS, split_srcs, linkinputs, basename, inputs
 			build_line(" in_" type " = " inputsbytype[type]);
 		}
 
-		if (modules[module] == "program")
-		{
-			phonydeps[toolchain, outname] = 1;
-			phonydeps[modname, outname] = 1;
-			phonydeps["all", modname] = 1;
-		}
+		gsub(SUBSEP, "/", modname);
+		phonydeps[toolchain, outname] = 1;
+		phonydeps[modname, outname] = 1;
+		phonydeps["all", modname] = 1;
 	}
 }
 
