@@ -40,6 +40,44 @@ function die(msg) { errmsg(msg); fail=1; exit 1; }
 END { close(errfile); if (fail) exit 1; }
 
 ################################################################
+## Name tracking & normalization
+################################################################
+## Global variables:
+##   srcnames[id] = input name, for direct sources
+##   basenames[id] = basename
+##   dirs[id] = directories
+## Internal variable:
+##   next_id
+################################################################
+function get_id()
+{
+	return next_id++;
+}
+function save_source(dir, name, type, LOCALS, id)
+{
+	id = get_id();
+	srcnames[id] = name;
+	dirs[id] = dir;
+	basenames[id] = get_base_name(type, name);
+	return id;
+}
+function save_name(dir, name, LOCALS, id)
+{
+	id = get_id();
+	dirs[id] = dir;
+	basenames[id] = name;
+	return id;
+}
+function get_srcname_by_id(id)
+{
+	return dirs[id] "/" srcnames[id];
+}
+function get_basename_by_id(id)
+{
+	return dirs[id] SUBSEP basenames[id];
+}
+
+################################################################
 ## Assorted slicing and dicing
 ################################################################
 function joininputs(start, sep)
@@ -214,7 +252,7 @@ $1 == "compile" \
 ## Source file bookkeeping
 ################################################################
 ## Global variables:
-##   sources[module, platform, type] = space-separated filenames
+##   sources[module, platform, type] = space-separated IDs
 ##   intermediates[module, platform, type] = space-separated basenames
 ################################################################
 function add_intermediate(module, platform, type, basename)
@@ -223,12 +261,13 @@ function add_intermediate(module, platform, type, basename)
 	if(type in compile_result)
 		add_intermediate(module, platform, compile_result[type], basename);
 }
-function add_source(module, platform, type, name, LOCALS, basename)
+function add_source(module, platform, type, name, LOCALS, basename, id)
 {
-	sources[module, platform, type] = sources[module, platform, type] " " name;
+	id = save_source(dir, name, type);
+	sources[module, platform, type] = sources[module, platform, type] " " id;
 	if(type in compile_result)
 	{
-		basename = get_base_name(type, name);
+		basename = get_basename_by_id(id);
 		add_intermediate(module, platform, compile_result[type], basename);
 	}
 }
@@ -267,11 +306,6 @@ function add_toolchain_dir(toolchain, path)
 	gsub(SUBSEP, "/" toolchain "/", path);
 	return path;
 }
-function get_srcdir_name(path)
-{
-	gsub(SUBSEP, "/", path);
-	return path;
-}
 function write_compile_rules(toolchain, module, LOCALS, platform, type, n, splitsources, basename, outname)
 {
 	platform = toolchains[toolchain];
@@ -282,10 +316,10 @@ function write_compile_rules(toolchain, module, LOCALS, platform, type, n, split
 		{
 			for(i=1; i<=n; i++)
 			{
-				basename = get_base_name(type, splitsources[i]);
+				basename = get_basename_by_id(splitsources[i]);
 				outname = get_out_name(toolchain, compile_result[type], basename);
 				outname = add_toolchain_dir(toolchain, outname);
-				build_line("build " outname " : " toolchain compile_rules[type] " " get_srcdir_name(splitsources[i]));
+				build_line("build " outname " : " toolchain compile_rules[type] " " get_srcname_by_id(splitsources[i]));
 			}
 		}
 	}
@@ -295,7 +329,7 @@ function write_compile_rules(toolchain, module, LOCALS, platform, type, n, split
 #  toolchains[toolchain_name] = platform for toolchain
 #  modules[module_name] = type (also serves as list of all known modules)
 #  mod_platforms[module_name, platform] = 1 (list of module/platforms)
-#  exports[name, type, platform] = basename (including path) of exported source
+#  exports[name, type, platform] = ID of exported source
 #  phonydeps[rule, dependency] = 1 (phony rule accumulator)
 
 
@@ -320,13 +354,13 @@ $1 == "export" \
 {
 	type = $2;
 	platform = $3;
-	basename = dir SUBSEP $4;
+	id = save_name(dir, $4);
 	name = $5;
 	if ((name, type, platform) in exports)
 	{
-		error("Export '" name "' (type '" type "', platform '" platform "') already exists with basename " exports[name, type, platform]);
+		error("Export '" name "' (type '" type "', platform '" platform "') already exists with basename " get_basename_by_id(exports[name, type, platform]));
 	}
-	exports[name, type, platform] = basename;
+	exports[name, type, platform] = id;
 }
 
 #Collect module types and sanity-check
@@ -354,8 +388,8 @@ $1 == "import" \
 		imp_platform = ($i, type, platform) in exports ? platform : "all";
 		if (($i, type, imp_platform) in exports)
 		{
-			basename = exports[$i, type, imp_platform];
-			add_source(module, platform, type, basename);
+			id = exports[$i, type, imp_platform];
+			sources[module, platform, type] = sources[module, platform, type] " " id;
 		}
 		else
 		{
@@ -371,7 +405,7 @@ $1 == "source" \
 	type = $3;
 	mod_platforms[module, platform] = 1;
 	for (i=4; i<=NF; i++)
-		add_source(module, platform, type, dir SUBSEP $i);
+		add_source(module, platform, type, $i);
 }
 
 function write_rules(toolchain, LOCALS, split_srcs, linkinputs, basename, inputsbytype, modname, realname, realmod)
@@ -412,6 +446,7 @@ function write_rules(toolchain, LOCALS, split_srcs, linkinputs, basename, inputs
 		n = split(get_sources(module, platform, "library"), split_srcs, " ");
 		for (i=1; i<=n; i++)
 		{
+			split_srcs[i] = get_basename_by_id(split_srcs[i]);
 			split_srcs[i] = get_out_name(toolchain, "library", split_srcs[i]);
 			split_srcs[i] = add_toolchain_dir(toolchain, split_srcs[i]);
 		}
