@@ -272,13 +272,13 @@ function add_source(module, platform, type, name, LOCALS, basename, id)
 	add_source_by_id(module, platform, type, save_source(dir, name, type));
 }
 
-function get_sources(module, platform, type)
+function get_inputs(module, platform, type, LOCALS, ret)
 {
-	return sources[module, "all", type] " " sources[module, platform, type];
-}
-function get_intermediates(module, platform, type)
-{
-	return intermediates[module, "all", type] " " intermediates[module, platform, type];
+	ret = sources[module, "all", type];
+	ret = ret " " sources[module, platform, type];
+	ret = ret " " intermediates[module, "all", type];
+	ret = ret " " intermediates[module, platform, type];
+	return ret;
 }
 
 ################################################################
@@ -312,7 +312,7 @@ function write_compile_rules(toolchain, module, LOCALS, platform, type, n, split
 	platform = toolchains[toolchain];
 	for(type in compile_rules)
 	{
-		n = split(get_sources(module, platform, type), splitsources, " ");
+		n = split(get_inputs(module, platform, type), splitsources, " ");
 		if(n > 0)
 		{
 			for(i=1; i<=n; i++)
@@ -432,7 +432,7 @@ function write_rules(toolchain, LOCALS, split_srcs, linkinputs, basename, inputs
 
 		write_compile_rules(toolchain, module);
 
-		n = split(get_intermediates(module, platform, "obj"), split_srcs, " ");
+		n = split(get_inputs(module, platform, "obj"), split_srcs, " ");
 		for (i=1; i<=n; i++)
 		{
 			split_srcs[i] = get_basename_by_id(split_srcs[i]);
@@ -445,7 +445,7 @@ function write_rules(toolchain, LOCALS, split_srcs, linkinputs, basename, inputs
 			linkinputs = linkinputs " " inputsbytype["obj"];
 		}
 
-		n = split(get_sources(module, platform, "library"), split_srcs, " ");
+		n = split(get_inputs(module, platform, "library"), split_srcs, " ");
 		for (i=1; i<=n; i++)
 		{
 			split_srcs[i] = get_basename_by_id(split_srcs[i]);
