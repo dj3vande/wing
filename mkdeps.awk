@@ -261,16 +261,19 @@ function add_intermediate(module, platform, type, basename)
 	if(type in compile_result)
 		add_intermediate(module, platform, compile_result[type], basename);
 }
-function add_source(module, platform, type, name, LOCALS, basename, id)
+function add_source_by_id(module, platform, type, id)
 {
-	id = save_source(dir, name, type);
 	sources[module, platform, type] = sources[module, platform, type] " " id;
 	if(type in compile_result)
 	{
-		basename = get_basename_by_id(id);
-		add_intermediate(module, platform, compile_result[type], basename);
+		add_intermediate(module, platform, compile_result[type], get_basename_by_id(id));
 	}
 }
+function add_source(module, platform, type, name, LOCALS, basename, id)
+{
+	add_source_by_id(module, platform, type, save_source(dir, name, type));
+}
+
 function get_sources(module, platform, type)
 {
 	return sources[module, "all", type] " " sources[module, platform, type];
@@ -389,7 +392,7 @@ $1 == "import" \
 		if (($i, type, imp_platform) in exports)
 		{
 			id = exports[$i, type, imp_platform];
-			sources[module, platform, type] = sources[module, platform, type] " " id;
+			add_source_by_id(module, platform, type, id);
 		}
 		else
 		{
