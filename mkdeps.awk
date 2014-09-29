@@ -72,15 +72,15 @@ function get_srcname_by_id(id)
 {
 	return dirs[id] "/" srcnames[id];
 }
-function get_basename_by_id(id)
+function get_basename_by_id(id, toolchain)
 {
-	return dirs[id] "/" basenames[id];
+	if(toolchain) toolchain = toolchain"/"
+	return dirs[id] "/" toolchain basenames[id];
 }
 function get_outname_by_id(id, type, toolchain, LOCALS, base, ret)
 {
+	base = get_basename_by_id(id, toolchain);
 	ret = get_template(toolchain, type);
-	if(toolchain) toolchain=toolchain"/";
-	base = dirs[id] "/" toolchain basenames[id];
 	gsub("%", base, ret);
 	return ret;
 }
@@ -403,7 +403,7 @@ $1 == "source" \
 		add_source(module, platform, type, $i);
 }
 
-function write_rules(toolchain, LOCALS, module, split_srcs, linkinputs, basename, inputsbytype, modname, realmod, outname)
+function write_rules(toolchain, LOCALS, module, split_srcs, linkinputs, inputsbytype, modname, realmod, outname, outbase)
 {
 	platform = toolchains[toolchain];
 
@@ -444,12 +444,12 @@ function write_rules(toolchain, LOCALS, module, split_srcs, linkinputs, basename
 		else realmod = module;
 
 		outname = get_outname_by_id(realmod, modules[module], toolchain);
-		basename = get_outname_by_id(realmod, "HACK: bogus type uses identity template", toolchain);
+		outbase = get_basename_by_id(realmod, toolchain);
 		modname = get_basename_by_id(module);
 
 		rule = toolchain link_rules[modules[module]];
 		build_line("build " outname " : " rule linkinputs);
-		build_line(" out_base = " basename);
+		build_line(" out_base = " outbase);
 		for (type in inputsbytype)
 		{
 			build_line(" in_" type " = " inputsbytype[type]);
