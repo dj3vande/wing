@@ -229,19 +229,27 @@ function get_template(toolchain, type)
 }
 
 ################################################################
-## Compile (TODO: and link) rules
+## Compile rules
 ################################################################
 ## File syntax:
-##   compile <rulebase> <input-type> <output-type>
+##   compile <rulebase> <output-type> <input-type>
+##   link <rulebase> <output-type> <input-type>...
 ################################################################
 ## Global variables:
 ##   compile_result[type] = type of output
-##   compile_rules[type] = base rule to compile with
+##   compile_rules[type] = base rule to compile source type with
+##   link_inputs[type] = input types for linking output type
+##   link_rules[type] = base rule to link output type with
 ################################################################
 $1 == "compile" \
 {
-	compile_result[$3] = $4;
-	compile_rules[$3] = $2;
+	compile_result[$4] = $3;
+	compile_rules[$4] = $2;
+}
+$1 == "link" \
+{
+	link_rules[$3] = $2;
+	link_inputs[$3] = joininputs(4, " ");
 }
 
 ################################################################
@@ -282,15 +290,8 @@ function get_intermediates(module, platform, type)
 ##   outfile = file to write output to (default: stdout)
 ################################################################
 ## Global variables:
-##   link_rules[type] = base rule to compile output module type
-##   See also compile rule input handling
+##   See compile rule input handling
 ################################################################
-BEGIN \
-{
-	# TODO: Make configurable
-	link_rules["program"] = "link";
-	link_rules["library"] = "ar";
-}
 function build_line(str)
 {
 	if(outfile) print str > outfile;

@@ -6,7 +6,9 @@ template mingw program %.exe
 template wine program %.exe %.exe.so
 
 #Compile rules
-compile cc C obj
+compile cc obj C
+link ar library obj
+link link program obj library
 
 #toolchains
 toolchain host unix osx 32
