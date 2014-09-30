@@ -268,14 +268,12 @@ function add_source(module, platform, type, name, LOCALS, basename, id)
 	add_source_by_id(module, platform, type, save_source(dir, name, type));
 }
 
-function get_inputs(module, platform, type, LOCALS, ret)
-{
-	ret = sources[module, "all", type];
-	ret = ret " " sources[module, platform, type];
-	ret = ret " " intermediates[module, "all", type];
-	ret = ret " " intermediates[module, platform, type];
-	return ret;
-}
+function get_inputs(module, platform, type, arr, LOCALS, ret)
+{ return arr[module, "all", type] " " arr[module, platform, type]; }
+function get_sources(module, platform, type)
+{ return get_inputs(module, platform, type, sources); }
+function get_intermediates(module, platform, type)
+{ return get_inputs(module, platform, type, intermediates); }
 
 ################################################################
 ## Build rule generation
@@ -303,19 +301,25 @@ function add_toolchain_dir(toolchain, path)
 	gsub(SUBSEP, "/" toolchain "/", path);
 	return path;
 }
-function write_compile_rules(toolchain, module, LOCALS, platform, type, n, splitsources, outname)
+function write_compile_rules(toolchain, module, LOCALS, platform, type, n, splitsources, srcname, outname)
 {
 	platform = toolchains[toolchain];
 	for(type in compile_rules)
 	{
-		n = split(get_inputs(module, platform, type), splitsources, " ");
-		if(n > 0)
+		n = split(get_sources(module, platform, type), splitsources, " ");
+		for(i=1; i<=n; i++)
 		{
-			for(i=1; i<=n; i++)
-			{
-				outname = get_outname_by_id(splitsources[i], compile_result[type], toolchain);
-				build_line("build " outname " : " toolchain compile_rules[type] " " get_srcname_by_id(splitsources[i]));
-			}
+			outname = get_outname_by_id(splitsources[i], compile_result[type], toolchain);
+			srcname = get_srcname_by_id(splitsources[i]);
+			build_line("build " outname " : " toolchain compile_rules[type] " " srcname);
+		}
+
+		n = split(get_intermediates(module, platform, type), splitsources, " ");
+		for(i=1; i<=n; i++)
+		{
+			outname = get_outname_by_id(splitsources[i], compile_result[type], toolchain);
+			srcname = get_outname_by_id(splitsources[i], type, toolchain);
+			build_line("build " outname " : " toolchain compile_rules[type] " " srcname);
 		}
 	}
 }
@@ -384,7 +388,7 @@ $1 == "import" \
 		if (($i, type, imp_platform) in exports)
 		{
 			id = exports[$i, type, imp_platform];
-			add_source_by_id(module, platform, type, id);
+			add_intermediate_by_id(module, platform, type, id);
 		}
 		else
 		{
@@ -418,7 +422,7 @@ function write_rules(toolchain, LOCALS, module, split_srcs, linkinputs, inputsby
 
 		write_compile_rules(toolchain, module);
 
-		n = split(get_inputs(module, platform, "obj"), split_srcs, " ");
+		n = split(get_intermediates(module, platform, "obj"), split_srcs, " ");
 		for (i=1; i<=n; i++)
 		{
 			split_srcs[i] = get_outname_by_id(split_srcs[i], "obj", toolchain);
@@ -429,7 +433,7 @@ function write_rules(toolchain, LOCALS, module, split_srcs, linkinputs, inputsby
 			linkinputs = linkinputs " " inputsbytype["obj"];
 		}
 
-		n = split(get_inputs(module, platform, "library"), split_srcs, " ");
+		n = split(get_intermediates(module, platform, "library"), split_srcs, " ");
 		for (i=1; i<=n; i++)
 		{
 			split_srcs[i] = get_outname_by_id(split_srcs[i], "library", toolchain);
