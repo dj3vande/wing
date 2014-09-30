@@ -408,7 +408,29 @@ $1 == "source" \
 		add_source(module, platform, type, $i);
 }
 
-function write_rules(toolchain, LOCALS, module, split_srcs, linkinputs, inputsbytype, modname, realmod, outname, outbase)
+function get_linkinputs(module, toolchain, type, LOCALS, ret, platform, i, n, split_inputs)
+{
+	platform = toolchains[toolchain];
+
+	n = split(get_sources(module, platform, type), split_inputs);
+	if(n > 0)
+	{
+		for(i=1; i<=n; i++)
+			split_inputs[i] = get_srcname_by_id(split_inputs[i], type);
+		ret = unsplit(split_inputs, n);
+	}
+	n = split(get_intermediates(module, platform, type), split_inputs);
+	if(n > 0)
+	{
+		for(i=1; i<=n; i++)
+			split_inputs[i] = get_outname_by_id(split_inputs[i], type, toolchain);
+		ret = (ret ? ret " " : "") unsplit(split_inputs, n);
+	}
+
+	return ret;
+}
+
+function write_rules(toolchain, LOCALS, module, split_types, linkinputs, inputsbytype, modname, realmod, outname, outbase, n, i, t)
 {
 	platform = toolchains[toolchain];
 
@@ -423,26 +445,15 @@ function write_rules(toolchain, LOCALS, module, split_srcs, linkinputs, inputsby
 
 		write_compile_rules(toolchain, module);
 
-		n = split(get_intermediates(module, platform, "obj"), split_srcs, " ");
-		for (i=1; i<=n; i++)
+		n = split(link_inputs[modules[module]], split_types);
+		for(i=1; i<=n; i++)
 		{
-			split_srcs[i] = get_outname_by_id(split_srcs[i], "obj", toolchain);
-		}
-		if(n>0)
-		{
-			inputsbytype["obj"] = unsplit(split_srcs, n, " ");
-			linkinputs = linkinputs " " inputsbytype["obj"];
-		}
-
-		n = split(get_intermediates(module, platform, "library"), split_srcs, " ");
-		for (i=1; i<=n; i++)
-		{
-			split_srcs[i] = get_outname_by_id(split_srcs[i], "library", toolchain);
-		}
-		if(n>0)
-		{
-			inputsbytype["library"] = unsplit(split_srcs, n, " ");
-			linkinputs = linkinputs " " inputsbytype["library"];
+			t = get_linkinputs(module, toolchain, split_types[i]);
+			if(t)
+			{
+				linkinputs = linkinputs " " t;
+				inputsbytype[split_types[i]] = t;
+			}
 		}
 
 		if((module, platform) in renames) realmod = renames[module, platform];
