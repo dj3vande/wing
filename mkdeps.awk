@@ -297,11 +297,6 @@ function build_line(str)
 	if(outfile) print str > outfile;
 	else print str;
 }
-function add_toolchain_dir(toolchain, path)
-{
-	gsub(SUBSEP, "/" toolchain "/", path);
-	return path;
-}
 function write_compile_rules(toolchain, module, LOCALS, platform, type, n, splitsources, srcname, outname)
 {
 	platform = toolchains[toolchain];
