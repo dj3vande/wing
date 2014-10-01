@@ -44,6 +44,8 @@ END { close(errfile); if (fail) exit 1; }
 ################################################################
 ## Global variables:
 ##   srcnames[id] = input name, for direct sources
+##   srctypes[id] = input type, so we know if we should use
+##     srcnames for lookups
 ##   basenames[id] = basename
 ##   dirs[id] = directories
 ## Internal variable:
@@ -59,6 +61,7 @@ function save_source(dir, name, type, LOCALS, id)
 	srcnames[id] = name;
 	dirs[id] = dir;
 	basenames[id] = get_base_name(type, name);
+	srctypes[id] = type;
 	return id;
 }
 function save_name(dir, name, LOCALS, id)
@@ -71,6 +74,13 @@ function save_name(dir, name, LOCALS, id)
 function get_srcname_by_id(id)
 {
 	return dirs[id] "/" srcnames[id];
+}
+function get_inputname_by_id(id, type, toolchain)
+{
+	if ((id in srcnames) && (srctypes[id] == type))
+		return get_srcname_by_id(id);
+	else
+		return get_outname_by_id(id, type, toolchain);
 }
 function get_basename_by_id(id, toolchain)
 {
@@ -306,14 +316,14 @@ function write_compile_rules(toolchain, module, LOCALS, platform, type, n, split
 		for(i=1; i<=n; i++)
 		{
 			outname = get_outname_by_id(splitsources[i], compile_result[type], toolchain);
-			srcname = get_srcname_by_id(splitsources[i]);
+			srcname = get_inputname_by_id(splitsources[i], type, toolchain);
 			build_line("build " outname " : " toolchain compile_rules[type] " " srcname);
 		}
 
 		n = split(get_intermediates(module, platform, type), splitsources, " ");
 		for(i=1; i<=n; i++)
 		{
-			outname = get_outname_by_id(splitsources[i], compile_result[type], toolchain);
+			outname = get_inputname_by_id(splitsources[i], compile_result[type], toolchain);
 			srcname = get_outname_by_id(splitsources[i], type, toolchain);
 			build_line("build " outname " : " toolchain compile_rules[type] " " srcname);
 		}
@@ -411,14 +421,14 @@ function get_linkinputs(module, toolchain, type, LOCALS, ret, platform, i, n, sp
 	if(n > 0)
 	{
 		for(i=1; i<=n; i++)
-			split_inputs[i] = get_srcname_by_id(split_inputs[i], type);
+			split_inputs[i] = get_inputname_by_id(split_inputs[i], type, toolchain);
 		ret = unsplit(split_inputs, n);
 	}
 	n = split(get_intermediates(module, platform, type), split_inputs);
 	if(n > 0)
 	{
 		for(i=1; i<=n; i++)
-			split_inputs[i] = get_outname_by_id(split_inputs[i], type, toolchain);
+			split_inputs[i] = get_inputname_by_id(split_inputs[i], type, toolchain);
 		ret = (ret ? ret " " : "") unsplit(split_inputs, n);
 	}
 
