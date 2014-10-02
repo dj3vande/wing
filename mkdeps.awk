@@ -273,6 +273,8 @@ function add_source_by_id(module, platform, type, id)
 	sources[module, platform, type] = sources[module, platform, type] " " id;
 	if(type in compile_result)
 		add_source_by_id(module, platform, compile_result[type], id);
+	else if(!index(link_inputs[modules[module]], type))
+		warn("Don't know what to do with " type " source " get_basename_by_id(id) "!");
 }
 function add_source(module, platform, type, name, LOCALS, basename, id)
 {
