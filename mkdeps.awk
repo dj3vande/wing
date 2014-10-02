@@ -255,11 +255,13 @@ $1 == "compile" \
 {
 	compile_result[$4] = $3;
 	compile_rules[$4] = $2;
+	next;
 }
 $1 == "link" \
 {
 	link_rules[$3] = $2;
 	link_inputs[$3] = joininputs(4, " ");
+	next;
 }
 
 ################################################################
@@ -353,6 +355,7 @@ $1 == "export" \
 		error("Export '" name "' (type '" type "', platform '" platform "') already exists with basename " get_basename_by_id(exports[name, type, platform]));
 	}
 	exports[name, type, platform] = id;
+	next;
 }
 
 #Collect module types and sanity-check
@@ -361,6 +364,7 @@ $1 in link_rules \
 	module = save_name(dir, $2);
 	#TODO: Check for duplicate names
 	modules[module] = $1;
+	next;
 }
 $1 == "rename" \
 {
@@ -388,6 +392,7 @@ $1 == "import" \
 			error("Unresolved import '" $i "' (type '" type "', platform '" platform "'");
 		}
 	}
+	next;
 }
 
 #Collect sources
@@ -398,6 +403,7 @@ $1 == "source" \
 	mod_platforms[module, platform] = 1;
 	for (i=4; i<=NF; i++)
 		add_source(module, platform, type, $i);
+	next;
 }
 
 function get_linkinputs(module, toolchain, type, LOCALS, ret, platform, i, n, split_inputs)
