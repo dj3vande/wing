@@ -267,31 +267,22 @@ $1 == "link" \
 ################################################################
 ## Global variables:
 ##   sources[module, platform, type] = space-separated IDs
-##   intermediates[module, platform, type] = space-separated IDs
 ################################################################
-function add_intermediate_by_id(module, platform, type, id)
-{
-	intermediates[module, platform, type] = intermediates[module, platform, type] " " id;
-	if(type in compile_result)
-		add_intermediate_by_id(module, platform, compile_result[type], id);
-}
 function add_source_by_id(module, platform, type, id)
 {
 	sources[module, platform, type] = sources[module, platform, type] " " id;
 	if(type in compile_result)
-		add_intermediate_by_id(module, platform, compile_result[type], id);
+		add_source_by_id(module, platform, compile_result[type], id);
 }
 function add_source(module, platform, type, name, LOCALS, basename, id)
 {
 	add_source_by_id(module, platform, type, save_source(dir, name, type));
 }
 
-function get_all_inputs(module, platform, type, LOCALS, ret)
+function get_inputs(module, platform, type, LOCALS, ret)
 {
 	ret = sources[module, "all", type];
 	ret = (ret ? ret " " : "") sources[module, platform, type];
-	ret = (ret ? ret " " : "") intermediates[module, "all", type];
-	ret = (ret ? ret " " : "") intermediates[module, platform, type];
 	return ret;
 }
 
@@ -314,7 +305,7 @@ function write_compile_rules(toolchain, module, LOCALS, platform, type, n, split
 	platform = toolchains[toolchain];
 	for(type in compile_rules)
 	{
-		n = split(get_all_inputs(module, platform, type), splitsources, " ");
+		n = split(get_inputs(module, platform, type), splitsources, " ");
 		for(i=1; i<=n; i++)
 		{
 			outname = get_outname_by_id(splitsources[i], compile_result[type], toolchain);
@@ -388,7 +379,7 @@ $1 == "import" \
 		if (($i, type, imp_platform) in exports)
 		{
 			id = exports[$i, type, imp_platform];
-			add_intermediate_by_id(module, platform, type, id);
+			add_source_by_id(module, platform, type, id);
 		}
 		else
 		{
@@ -411,7 +402,7 @@ function get_linkinputs(module, toolchain, type, LOCALS, ret, platform, i, n, sp
 {
 	platform = toolchains[toolchain];
 
-	n = split(get_all_inputs(module, platform, type), split_inputs);
+	n = split(get_inputs(module, platform, type), split_inputs);
 	if(n > 0)
 	{
 		for(i=1; i<=n; i++)
