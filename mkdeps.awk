@@ -37,7 +37,9 @@ function errmsg(msg) { print msg >> errfile; }
 function warn(msg) { errmsg(FILENAME ":" FNR ": Warning: " msg); }
 function error(msg) { errmsg(FILENAME ":" FNR ": Error: " msg); fail=1; }
 function die(msg) { errmsg(msg); fail=1; exit 1; }
-END { close(errfile); if (fail) exit 1; }
+## Resolving imports may generate errors, that we need to handle
+## sensibly.
+END { resolve_imports(); close(errfile); if (fail) exit 1; }
 
 ################################################################
 ## Name tracking & normalization
@@ -375,14 +377,14 @@ function write_compile_rules(toolchain, LOCALS, platform, type, m, n, srclist, s
 $1 == "toolchain" { toolchains[$2] = $3; }
 
 
-#Exports and imports
-#Note that imports are resolved when we encounter them; it's up to the
-#user to generate a non-cyclic dependency graph on subdirectory includes
-#and put the includes in a toposorted order.
-#This may change if a sufficiently compelling use case is produced.
-#An export for platform "all" will match any platform on an import; an
-#export with a specific platform will only match that platform (only an
-#export for "all" will match an import for "all").
+## Exports and imports
+## Input files are read in breadth-first order, isn't necessarily a
+## lexically sensible order; so resolving immediately can produce bad
+## imports that "obviously should" get resolved cleanly.
+## So we wait until we've done everything to do the resolution.
+## An export for platform "all" will match any platform on an import; an
+## export with a specific platform will only match that platform (only an
+## export for "all" will match an import for "all").
 
 $1 == "export" \
 {
@@ -398,6 +400,54 @@ $1 == "export" \
 	next;
 }
 
+$1 == "import" \
+{
+	platform = $2;
+	type = $3;
+	mod_platforms[module, platform] = 1;
+	for (i=4; i<=NF; i++)
+	{
+		id = get_id();
+		imports[id] = $i;
+		imports_type[id] = type;
+		imports_module[id] = module;
+		imports_platform[id] = platform;
+		imports_location[id] = FILENAME ":" FNR;
+	}
+	next;
+}
+
+## This "really should" be an END rule, but because of interaction with
+## the error-out handling (we want to detect all possible input errors
+## before we start writing output), instead of matching END here it gets
+## called from the error handling END rule before the "have we failed?"
+## check.
+function resolve_imports(LOCALS, impid, name, type, module, platform, imp_platform)
+{
+	for(impid in imports)
+	{
+		name = imports[impid];
+		type = imports_type[impid];
+		module = imports_module[impid];
+		platform = imports_platform[impid];
+
+		imp_platform = ((name, type, platform) in exports) ? platform : "all";
+		if((name, type, imp_platform) in exports)
+		{
+			id = exports[name, type, imp_platform];
+			add_source_by_id(module, platform, type, id);
+		}
+		else
+		{
+			## At resolve-imports time, FILENAME and FNR no
+			## no longer contain the location of the bad import,
+			## so we can't use error()
+			errmsg(imports_location[impid] ": Error: Unresolved import '" name "' (type " type "', platform '" platform "')");
+			fail=1;
+		}
+	}
+}
+
 #Collect module types and sanity-check
 $1 in link_rules \
 {
@@ -411,27 +461,6 @@ $1 == "rename" \
 	newid = save_name(dir, $3);
 	#TODO: Check for renaming on top of something that already exists
 	renames[module, $2] = newid;
-	next;
-}
-
-$1 == "import" \
-{
-	platform = $2;
-	type = $3;
-	mod_platforms[module, platform] = 1;
-	for (i=4; i<=NF; i++)
-	{
-		imp_platform = ($i, type, platform) in exports ? platform : "all";
-		if (($i, type, imp_platform) in exports)
-		{
-			id = exports[$i, type, imp_platform];
-			add_source_by_id(module, platform, type, id);
-		}
-		else
-		{
-			error("Unresolved import '" $i "' (type '" type "', platform '" platform "'");
-		}
-	}
 	next;
 }
 
