@@ -335,16 +335,25 @@ function build_line(str)
 	if(outfile) print str > outfile;
 	else print str;
 }
-function write_compile_rules(toolchain, module, LOCALS, platform, type, n, splitsources, srcname, outname)
+
+function write_compile_rules(toolchain, LOCALS, platform, type, m, n, srclist, srcarray, tmparray, splitsources, srcname, outname)
 {
 	platform = toolchains[toolchain];
+	getfirst(sources, srcarray, "all");
+	getfirst(sources, tmparray, platform);
+	combine(srcarray, tmparray);
+	## srcarray[type, module] = list of sources
+
 	for(type in compile_rules)
 	{
-		n = split(get_inputs(module, platform, type), splitsources, " ");
+		getfirst(srcarray, tmparray, type);
+		srclist = "";
+		for(m in tmparray) srclist = srclist " " tmparray[m];
+		n = split(srclist, splitsources);
 		for(i=1; i<=n; i++)
 		{
-			outname = get_outname_by_id(splitsources[i], compile_result[type], toolchain);
 			srcname = get_inputname_by_id(splitsources[i], type, toolchain);
+			outname = get_outname_by_id(splitsources[i], compile_result[type], toolchain);
 			build_line("build " outname " : " toolchain compile_rules[type] " " srcname);
 		}
 	}
@@ -456,6 +465,8 @@ function write_rules(toolchain, LOCALS, module, split_types, linkinputs, inputsb
 {
 	platform = toolchains[toolchain];
 
+	write_compile_rules(toolchain);
+
 	for (module in modules)
 	{
 		if (!((module, "all") in mod_platforms || (module, platform) in mod_platforms))
@@ -464,8 +475,6 @@ function write_rules(toolchain, LOCALS, module, split_types, linkinputs, inputsb
 		for(type in inputsbytype)
 			delete inputsbytype[type];
 		linkinputs = "";
-
-		write_compile_rules(toolchain, module);
 
 		n = split(link_inputs[modules[module]], split_types);
 		for(i=1; i<=n; i++)
