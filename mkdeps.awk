@@ -268,11 +268,11 @@ $1 == "link" \
 ## Source file bookkeeping
 ################################################################
 ## Global variables:
-##   sources[module, platform, type] = space-separated IDs
+##   sources[platform, type, module] = space-separated IDs
 ################################################################
 function add_source_by_id(module, platform, type, id)
 {
-	sources[module, platform, type] = sources[module, platform, type] " " id;
+	sources[platform, type, module] = sources[platform, type, module] " " id;
 	if(type in compile_result)
 		add_source_by_id(module, platform, compile_result[type], id);
 	else if(!index(link_inputs[modules[module]], type))
@@ -285,8 +285,8 @@ function add_source(module, platform, type, name, LOCALS, basename, id)
 
 function get_inputs(module, platform, type, LOCALS, ret)
 {
-	ret = sources[module, "all", type];
-	ret = (ret ? ret " " : "") sources[module, platform, type];
+	ret = sources["all", type, module];
+	ret = (ret ? ret " " : "") sources[platform, type, module];
 	return ret;
 }
 
