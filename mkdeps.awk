@@ -136,6 +136,37 @@ function collect(arr2, arr1, fs, LOCALS, both, left, right, n)
 	}
 }
 
+# For each index (first,...) in arr2, the value indexed is placed in
+# arr1[...].
+# This gives us a way to fake nested arrays, i.e. it lets us use the
+# array that arr2[first][...] would be if arrays were allowed to
+# contain non-scalar values.
+function getfirst(arr2, arr1, first, LOCALS, both, left, right, n)
+{
+	for(both in arr1) delete arr1[both];
+	for(both in arr2)
+	{
+		n = index(both, SUBSEP);
+		if(n==0) continue;
+		left = substr(both, 1, n-1);
+		right = substr(both, n+length(SUBSEP));
+		if(left==first)
+			arr1[right] = arr2[both];
+	}
+}
+
+# Copy the contents of from to into, without destroying existing values.
+# If an index appears in both arrays, the values are appended in into
+# delimited by fs (default " ").
+function combine(into, from, fs, LOCALS, idx)
+{
+	if(!fs) fs=" ";
+	for(idx in from)
+	{
+		into[idx] = ((idx in into) ? (into[idx] fs) : "") from[idx];
+	}
+}
+
 
 ################################################################
 ## Tag file tracking
