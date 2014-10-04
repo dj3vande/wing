@@ -19,15 +19,6 @@ Things mkdeps doesn't support but should:
   -These should by default run things for the local directory only, with
    "run it for the whole source tree" rules also available.
 
--Configurable source-based rule definitions
- i.e. we want to be able to say things like
-	rule cc C -> obj
-	rule link [obj] [library] -> program
-	rule ar [obj] -> library
-	rule yacc yacc -> C
- instead of having the rules and corresponding filetype transformations
- built in
-
 -In-tree code generators (may need special magic to know which toolchain
  to use to build things we run as part of the build; alternatively, if
  requiring the user to encode that in rules.ninja is sensible, we still
