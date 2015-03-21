@@ -1,12 +1,16 @@
+#Tool files
 .ninja_log
-*.d
-*.o
-*.a
-*.exe
+.ninja_deps
+
+#Intermediate build products
 deps.ninja
+tags
+*.d
+
+#Build output directories
 host/
 host64/
 mingw/
-ppc/
-tags
+mingw32/
+mingw64/
 wine/

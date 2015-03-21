@@ -13,9 +13,8 @@ link link program obj library
 #toolchains
 toolchain host unix osx 32
 toolchain host64 unix osx 64
-toolchain mingw win32 windows 32
-toolchain ppc unix osx-ppc 32
-toolchain wine win32 wine 32
+toolchain mingw32 win32 windows 32
+#toolchain mingw64 win32 windows 64
 
 #Build information from subdirectories
 subdirectory libwing deps.in
