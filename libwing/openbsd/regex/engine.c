@@ -364,6 +364,7 @@ dissect(struct match *m, char *start, char *stop, sopno startst, sopno stopst)
 			if (slow(m, sp, rest, ssub, esub) != NULL) {
 				dp = dissect(m, sp, rest, ssub, esub);
 				assert(dp == rest);
+				(void)dp; /* silence warning with NDEBUG */
 			} else		/* no */
 				assert(sp == rest);
 			sp = rest;
