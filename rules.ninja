@@ -16,6 +16,15 @@ rule host64link
 rule host64ar
  command = ar rcs ${out} ${in}
 
+#Hosted 32-bit winegcc toolchain
+rule winecc
+ depfile = ${out}.d
+ command = winegcc ${cflags} -MMD -MF ${out}.d -o ${out} -c ${in}
+rule winelink
+ command = winegcc ${ldflags} -o ${out_base} ${in}
+rule winear
+ command = ar rcs ${out} ${in}
+
 #mingw32 cross-compiler toolchain
 rule mingw32cc
  depfile = ${out}.d
