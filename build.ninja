@@ -1,6 +1,6 @@
 #!/usr/bin/env ninja -f
 
-cflags = -W -Wall -ansi -pedantic -O -I. -Werror
+cflags = -W -Wall -std=c99 -pedantic -O -I. -Werror
 
 include rules.ninja
 
