@@ -9,6 +9,7 @@
 
 regex_t grep_regex;
 unsigned long matched;
+int match_type = 0;
 
 /*Reads lines from in, and writes ones that match grep_regex to out.
   If an error occurs (on file read or memory allocation), returns
@@ -84,6 +85,13 @@ int do_grep(const char *file, void *venv)
 	return 0;
 }
 
+void usage_and_die(const char *myname, int status)
+{
+	/* TODO: Make sure usage is updated as features are implemented! */
+	fprintf(stderr, "Usage: %s [-EF] <pattern> [file ...]\n", myname);
+	exit(status);
+}
+
 int main(int argc, char **argv)
 {
 	int opt;
@@ -91,13 +99,18 @@ int main(int argc, char **argv)
 	int ret;
 	int error_occurred=0;
 
-	while((opt = getopt(argc, argv, "")) != -1)
+	while((opt = getopt(argc, argv, "EF")) != -1)
 	{
 		switch(opt)
 		{
+		case 'E':
+			match_type = REG_EXTENDED;
+		break;
+		case 'F':
+			match_type = REG_NOSPEC;
+		break;
 		case '?':
-			/*TODO: Output a usage message*/
-			exit(EXIT_FAILURE);
+			usage_and_die(argv[0], EXIT_FAILURE);
 		/*not reached*/
 		break;
 		default:
@@ -109,11 +122,11 @@ int main(int argc, char **argv)
 
 	if(argc == optind)
 	{
-		fprintf(stderr, "Usage: %s <pattern> [file ...]\n", argv[0]);
-		exit(EXIT_FAILURE);
+		usage_and_die(argv[0], EXIT_FAILURE);
+		/*not reached*/
 	}
 
-	ret=regcomp(&grep_regex, argv[optind], REG_NOSUB);
+	ret=regcomp(&grep_regex, argv[optind], REG_NOSUB | match_type);
 	if(ret != 0)
 	{
 		char errbuf[256];
