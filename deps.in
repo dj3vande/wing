@@ -1,21 +1,22 @@
-#Name generation rules
+#Default Name generation rules
 suffix obj .o
 suffix library .a
 suffix C .c
-template mingw program %.exe
-template wine program %.exe %.exe.so
 
 #Compile rules
 compile cc obj C
 link ar library obj
 link link program obj library
 
-#toolchains
+#Toolchains
 toolchain host unix osx 32
 toolchain host64 unix osx 64
 toolchain wine win32 wine 32
+template wine program %.exe %.exe.so
 toolchain mingw32 win32 windows 32
+template mingw32 program %.exe
 toolchain mingw64 win32 windows 64
+template mingw64 program %.exe
 
 #Build information from subdirectories
 subdirectory libwing deps.in
